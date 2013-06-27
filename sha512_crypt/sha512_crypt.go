@@ -125,13 +125,13 @@ func Crypt(keystr, saltstr string) string {
 	A := sha512.New()
 	A.Write(key)
 	A.Write(salt)
-	cnt := keyLen
-	for ; cnt > 64; cnt -= 64 {
+	i := keyLen
+	for ; i > 64; i -= 64 {
 		A.Write(Bsum)
 	}
-	A.Write(Bsum[0:cnt])
-	for cnt = keyLen; cnt > 0; cnt >>= 1 {
-		if (cnt & 1) != 0 {
+	A.Write(Bsum[0:i])
+	for i = keyLen; i > 0; i >>= 1 {
+		if (i & 1) != 0 {
 			A.Write(Bsum)
 		} else {
 			A.Write(key)
@@ -140,48 +140,48 @@ func Crypt(keystr, saltstr string) string {
 	Asum := A.Sum(nil)
 
 	P := sha512.New()
-	for cnt = 0; cnt < keyLen; cnt++ {
+	for i = 0; i < keyLen; i++ {
 		P.Write(key)
 	}
 	Psum := P.Sum(nil)
 
 	Pseq := make([]byte, 0, keyLen)
-	for cnt = keyLen; cnt > 64; cnt -= 64 {
+	for i = keyLen; i > 64; i -= 64 {
 		Pseq = append(Pseq, Psum...)
 	}
-	Pseq = append(Pseq, Psum[0:cnt]...)
+	Pseq = append(Pseq, Psum[0:i]...)
 
 	S := sha512.New()
-	for cnt = 0; cnt < (16 + int(Asum[0])); cnt++ {
+	for i = 0; i < (16 + int(Asum[0])); i++ {
 		S.Write(salt)
 	}
 	Ssum := S.Sum(nil)
 
 	Sseq := make([]byte, 0, saltLen)
-	for cnt = saltLen; cnt > 64; cnt -= 64 {
+	for i = saltLen; i > 64; i -= 64 {
 		Sseq = append(Sseq, Ssum...)
 	}
-	Sseq = append(Sseq, Ssum[0:cnt]...)
+	Sseq = append(Sseq, Ssum[0:i]...)
 
 	Csum := Asum
-	for cnt = 0; cnt < rounds; cnt++ {
+	for i = 0; i < rounds; i++ {
 		C := sha512.New()
 
-		if (cnt & 1) != 0 {
+		if (i & 1) != 0 {
 			C.Write(Pseq)
 		} else {
 			C.Write(Csum)
 		}
 
-		if (cnt % 3) != 0 {
+		if (i % 3) != 0 {
 			C.Write(Sseq)
 		}
 
-		if (cnt % 7) != 0 {
+		if (i % 7) != 0 {
 			C.Write(Pseq)
 		}
 
-		if (cnt & 1) != 0 {
+		if (i & 1) != 0 {
 			C.Write(Csum)
 		} else {
 			C.Write(Pseq)

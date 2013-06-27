@@ -92,13 +92,13 @@ func Crypt(keystr, saltstr string) string {
 	A.Write(key)
 	A.Write([]byte(MagicPrefix))
 	A.Write(salt)
-	cnt := keyLen
-	for ; cnt > 16; cnt -= 16 {
+	i := keyLen
+	for ; i > 16; i -= 16 {
 		A.Write(Bsum)
 	}
-	A.Write(Bsum[0:cnt])
-	for cnt = keyLen; cnt > 0; cnt >>= 1 {
-		if (cnt & 1) == 0 {
+	A.Write(Bsum[0:i])
+	for i = keyLen; i > 0; i >>= 1 {
+		if (i & 1) == 0 {
 			A.Write(key[0:1])
 		} else {
 			A.Write([]byte{0})
