@@ -10,12 +10,13 @@
 package sha256_crypt
 
 import (
-	. "antihe.ro/pwhash/common"
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"strconv"
+
+	"github.com/kless/crypt"
 )
 
 const (
@@ -55,7 +56,7 @@ func GenerateSalt(length, rounds int) string {
 	}
 	buf := make([]byte, rlen)
 	rand.Read(buf)
-	salt := Hash64(buf)
+	salt := crypt.Base64_24Bit(buf)
 	if rounds == RoundsDefault {
 		return fmt.Sprintf("%s%s", MagicPrefix, salt)
 	}
@@ -196,7 +197,7 @@ func Crypt(keystr, saltstr string) string {
 	}
 	buf.Write(salt)
 	buf.WriteByte('$')
-	buf.Write(Hash64([]byte{
+	buf.Write(crypt.Base64_24Bit([]byte{
 		Csum[20], Csum[10], Csum[0],
 		Csum[11], Csum[1], Csum[21],
 		Csum[2], Csum[22], Csum[12],

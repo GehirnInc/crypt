@@ -11,11 +11,12 @@
 package apr1_crypt
 
 import (
-	. "antihe.ro/pwhash/common"
 	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	"fmt"
+
+	"github.com/kless/crypt"
 )
 
 const (
@@ -43,7 +44,7 @@ func GenerateSalt(length int) string {
 	}
 	buf := make([]byte, rlen)
 	rand.Read(buf)
-	salt := Hash64(buf)
+	salt := crypt.Base64_24Bit(buf)
 	return fmt.Sprintf("%s%s", MagicPrefix, salt[:length])
 }
 
@@ -137,7 +138,7 @@ func Crypt(keystr, saltstr string) string {
 	buf = append(buf, MagicPrefix...)
 	buf = append(buf, salt...)
 	buf = append(buf, '$')
-	buf = append(buf, Hash64([]byte{
+	buf = append(buf, crypt.Base64_24Bit([]byte{
 		Csum[12], Csum[6], Csum[0],
 		Csum[13], Csum[7], Csum[1],
 		Csum[14], Csum[8], Csum[2],
