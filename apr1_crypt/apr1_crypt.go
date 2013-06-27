@@ -16,7 +16,7 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/kless/crypt"
+	"github.com/kless/crypt/common"
 )
 
 const (
@@ -44,7 +44,7 @@ func GenerateSalt(length int) string {
 	}
 	buf := make([]byte, rlen)
 	rand.Read(buf)
-	salt := crypt.Base64_24Bit(buf)
+	salt := common.Base64_24Bit(buf)
 	return fmt.Sprintf("%s%s", MagicPrefix, salt[:length])
 }
 
@@ -135,7 +135,7 @@ func Crypt(keystr, saltstr string) string {
 	buf = append(buf, MagicPrefix...)
 	buf = append(buf, salt...)
 	buf = append(buf, '$')
-	buf = append(buf, crypt.Base64_24Bit([]byte{
+	buf = append(buf, common.Base64_24Bit([]byte{
 		Csum[12], Csum[6], Csum[0],
 		Csum[13], Csum[7], Csum[1],
 		Csum[14], Csum[8], Csum[2],
