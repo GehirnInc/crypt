@@ -72,7 +72,7 @@ func GenerateSalt(length, rounds int) string {
 // and RoundsDefault number of rounds.
 func Crypt(keystr, saltstr string) string {
 	var key, salt []byte
-	var rounds, saltLen int
+	var rounds int
 	var roundsdef bool = false
 
 	key = []byte(keystr)
@@ -113,7 +113,6 @@ func Crypt(keystr, saltstr string) string {
 	if len(salt) > 16 {
 		salt = salt[0:16]
 	}
-	saltLen = len(salt)
 
 	B := sha256.New()
 	B.Write(key)
@@ -156,8 +155,8 @@ func Crypt(keystr, saltstr string) string {
 	}
 	Ssum := S.Sum(nil)
 
-	Sseq := make([]byte, 0, saltLen)
-	for i = saltLen; i > 32; i -= 32 {
+	Sseq := make([]byte, 0, len(salt))
+	for i = len(salt); i > 32; i -= 32 {
 		Sseq = append(Sseq, Ssum...)
 	}
 	Sseq = append(Sseq, Ssum[0:i]...)

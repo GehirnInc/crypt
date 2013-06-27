@@ -55,7 +55,6 @@ func GenerateSalt(length int) string {
 // parameter string will be generated of length SaltLenMax.
 func Crypt(keystr, saltstr string) string {
 	var key, salt []byte
-	var saltLen int
 
 	key = []byte(keystr)
 
@@ -79,7 +78,6 @@ func Crypt(keystr, saltstr string) string {
 	if len(salt) > 8 {
 		salt = salt[0:8]
 	}
-	saltLen = len(salt)
 
 	B := md5.New()
 	B.Write(key)
@@ -132,7 +130,7 @@ func Crypt(keystr, saltstr string) string {
 		Csum = C.Sum(nil)
 	}
 
-	buf := make([]byte, 0, 23+len(MagicPrefix)+saltLen)
+	buf := make([]byte, 0, 23+len(MagicPrefix)+len(salt))
 	buf = append(buf, MagicPrefix...)
 	buf = append(buf, salt...)
 	buf = append(buf, '$')
