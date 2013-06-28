@@ -65,13 +65,12 @@ func Crypt(key []byte, saltstr string) string {
 		return "invalid magic prefix"
 	}
 
-	salttoks := bytes.Split(saltbytes, []byte{'$'})
-	numtoks := len(salttoks)
+	saltToks := bytes.Split(saltbytes, []byte{'$'})
 
-	if numtoks < 3 {
+	if len(saltToks) < 3 {
 		return "invalid salt format"
 	} else {
-		salt = salttoks[2]
+		salt = saltToks[2]
 	}
 
 	if len(salt) > 8 {

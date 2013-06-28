@@ -83,16 +83,15 @@ func Crypt(key []byte, saltstr string) string {
 		return "invalid prefix"
 	}
 
-	salttoks := bytes.Split(saltbytes, []byte{'$'})
-	numtoks := len(salttoks)
+	saltToks := bytes.Split(saltbytes, []byte{'$'})
 
-	if numtoks < 3 {
+	if len(saltToks) < 3 {
 		return "invalid salt format"
 	}
 
-	if bytes.HasPrefix(salttoks[2], []byte("rounds=")) {
+	if bytes.HasPrefix(saltToks[2], []byte("rounds=")) {
 		roundsdef = true
-		pr, err := strconv.ParseInt(string(salttoks[2][7:]), 10, 32)
+		pr, err := strconv.ParseInt(string(saltToks[2][7:]), 10, 32)
 		if err != nil {
 			return "invalid rounds"
 		}
@@ -102,10 +101,10 @@ func Crypt(key []byte, saltstr string) string {
 		} else if rounds > RoundsMax {
 			rounds = RoundsMax
 		}
-		salt = salttoks[3]
+		salt = saltToks[3]
 	} else {
 		rounds = RoundsDefault
-		salt = salttoks[2]
+		salt = saltToks[2]
 	}
 
 	if len(salt) > 16 {
