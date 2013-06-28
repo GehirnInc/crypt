@@ -70,12 +70,10 @@ func GenerateSalt(length, rounds int) string {
 // If the salt string is the value RandomSalt, a randomly-generated
 // salt parameter string will be generated with a length of SaltLenMax
 // and RoundsDefault number of rounds.
-func Crypt(keystr, saltstr string) string {
-	var key, salt []byte
+func Crypt(key []byte, saltstr string) string {
+	var salt []byte
 	var rounds int
 	var roundsdef bool = false
-
-	key = []byte(keystr)
 
 	if saltstr == "" {
 		saltstr = GenerateSalt(SaltLenMax, RoundsDefault)
@@ -225,7 +223,7 @@ func Crypt(keystr, saltstr string) string {
 
 // Verify hashes a key using the same salt parameters as the given
 // hash string, and if the results match, it returns true.
-func Verify(key, hash string) bool {
+func Verify(key []byte, hash string) bool {
 	nhash := Crypt(key, hash)
 	if hash == nhash {
 		return true

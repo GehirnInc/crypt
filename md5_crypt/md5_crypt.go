@@ -21,7 +21,6 @@ const (
 	RandomSalt   = ""
 	SaltLenMax   = 8
 	SaltLenMin   = 1 // Real minimum is 0, but that isn't useful.
-
 )
 
 // Generate a random salt parameter string of a given length.
@@ -53,10 +52,8 @@ func GenerateSalt(length int) string {
 //
 // If the salt string is the value RandomSalt, a randomly-generated salt
 // parameter string will be generated of length SaltLenMax.
-func Crypt(keystr, saltstr string) string {
-	var key, salt []byte
-
-	key = []byte(keystr)
+func Crypt(key []byte, saltstr string) string {
+	var salt []byte
 
 	if saltstr == "" {
 		saltstr = GenerateSalt(SaltLenMax)
@@ -148,7 +145,7 @@ func Crypt(keystr, saltstr string) string {
 
 // Verify hashes a key using the same salt parameters as the given
 // hash string, and if the results match, it returns true.
-func Verify(key, hash string) bool {
+func Verify(key []byte, hash string) bool {
 	nhash := Crypt(key, hash)
 	if hash == nhash {
 		return true

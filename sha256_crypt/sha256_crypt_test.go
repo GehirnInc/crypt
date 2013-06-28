@@ -7,70 +7,74 @@ package sha256_crypt
 import "testing"
 
 func TestCrypt(t *testing.T) {
-	data := [][]string{
+	data := []struct {
+		salt string
+		key  []byte
+		out  string
+	}{
 		{
 			"$5$saltstring",
-			"Hello world!",
+			[]byte("Hello world!"),
 			"$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/G" +
 				"NooZaBBGWEc5",
 		},
 		{
 			"$5$rounds=10000$saltstringsaltstring",
-			"Hello world!",
+			[]byte("Hello world!"),
 			"$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41" +
 				"AL9AvLeujZkZRBAwqFMz2.opqey6IcA",
 		},
 		{
 			"$5$rounds=5000$toolongsaltstring",
-			"This is just a test",
+			[]byte("This is just a test"),
 			"$5$rounds=5000$toolongsaltstrin$Un/5jzAHMgOGZ" +
 				"5.mWJpuVolil07guHPvOW8mGRcvxa5",
 		},
 		{
 			"$5$rounds=1400$anotherlongsaltstring",
-			"a very much longer text to encrypt.  " +
+			[]byte("a very much longer text to encrypt.  " +
 				"This one even stretches over more" +
-				"than one line.",
+				"than one line."),
 			"$5$rounds=1400$anotherlongsalts$Rx.j8H.h8HjED" +
 				"GomFU8bDkXm3XIUnzyxf12oP84Bnq1",
 		},
 		{
 			"$5$rounds=77777$short",
-			"we have a short salt string but not a short password",
+			[]byte("we have a short salt string but not a short password"),
 			"$5$rounds=77777$short$JiO1O3ZpDAxGJeaDIuqCoEF" +
 				"ysAe1mZNJRs3pw0KQRd/",
 		},
 		{
 			"$5$rounds=123456$asaltof16chars..",
-			"a short string",
+			[]byte("a short string"),
 			"$5$rounds=123456$asaltof16chars..$gP3VQ/6X7UU" +
 				"EW3HkBn2w1/Ptq2jxPyzV/cZKmF/wJvD",
 		},
 		{
 			"$5$rounds=10$roundstoolow",
-			"the minimum number is still observed",
+			[]byte("the minimum number is still observed"),
 			"$5$rounds=1000$roundstoolow$yfvwcWrQ8l/K0DAWy" +
 				"uPMDNHpIVlTQebY9l/gL972bIC",
 		},
 	}
 
 	for i, d := range data {
-		hash := Crypt(d[1], d[0])
-		if hash != d[2] {
+		hash := Crypt(d.key, d.salt)
+		if hash != d.out {
 			t.Errorf("Test %d failed\nExpected: %s\n     Saw: %s",
-				i, d[2], hash)
+				i, d.out, hash)
 		}
 	}
 }
 
 func TestVerify(t *testing.T) {
-	data := []string{
-		"password",
-		"12345",
-		"That's amazing! I've got the same combination on my luggage!",
-		"And change the combination on my luggage!",
-		"         random  spa  c    ing.",
-		"94ajflkvjzpe8u3&*j1k513KLJ&*()",
+	data := [][]byte{
+		[]byte("password"),
+		[]byte("12345"),
+		[]byte("That's amazing! I've got the same combination on my luggage!"),
+		[]byte("And change the combination on my luggage!"),
+		[]byte("         random  spa  c    ing."),
+		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
 		hash := Crypt(d, "")
