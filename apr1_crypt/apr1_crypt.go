@@ -146,10 +146,4 @@ func Crypt(key []byte, saltstr string) string {
 
 // Verify hashes a key using the same salt parameters as the given
 // hash string, and if the results match, it returns true.
-func Verify(key []byte, hash string) bool {
-	nhash := Crypt(key, hash)
-	if hash == nhash {
-		return true
-	}
-	return false
-}
+func Verify(key []byte, hash string) bool { return Crypt(key, hash) == hash }

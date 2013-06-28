@@ -26,10 +26,8 @@ const (
 // Generate a random salt parameter string of a given length.
 //
 // If the length is greater than SaltLenMax, a string of that length
-// will be returned instead.
-//
-// Similarly, if length is less than SaltLenMin, a string of that
-// length will be returned instead.
+// will be returned instead. Similarly, if length is less than
+// SaltLenMin, a string of that length will be returned instead.
 func GenerateSalt(length int) string {
 	if length > SaltLenMax {
 		length = SaltLenMax
@@ -144,10 +142,4 @@ func Crypt(key []byte, saltstr string) string {
 
 // Verify hashes a key using the same salt parameters as the given
 // hash string, and if the results match, it returns true.
-func Verify(key []byte, hash string) bool {
-	nhash := Crypt(key, hash)
-	if hash == nhash {
-		return true
-	}
-	return false
-}
+func Verify(key []byte, hash string) bool { return Crypt(key, hash) == hash }
