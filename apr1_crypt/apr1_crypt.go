@@ -12,43 +12,14 @@ package apr1_crypt
 import (
 	"bytes"
 	"crypto/md5"
-	"crypto/rand"
 
 	"github.com/kless/crypt/common"
 )
 
-const (
-	MagicPrefix = "$apr1$"
-	SaltLenMax  = 8
-	SaltLenMin  = 1 // Real minimum is 0, but that isn't useful.
-)
-
-var _MagicPrefix = []byte(MagicPrefix)
-
-// GenerateSalt generates a random salt of a given length.
-//
-// The length is set thus:
-//
-//   length > SaltLenMax: length = SaltLenMax
-//   length < SaltLenMin: length = SaltLenMin
-func GenerateSalt(length int) []byte {
-	if length > SaltLenMax {
-		length = SaltLenMax
-	} else if length < SaltLenMin {
-		length = SaltLenMin
-	}
-
-	saltLen := (length * 6 / 8)
-	if (length*6)%8 != 0 {
-		saltLen += 1
-	}
-	salt := make([]byte, saltLen)
-	rand.Read(salt)
-
-	out := make([]byte, len(_MagicPrefix)+length)
-	copy(out, _MagicPrefix)
-	copy(out[len(_MagicPrefix):], common.Base64_24Bit(salt))
-	return out
+var Salt = &common.Salt{
+	MagicPrefix: []byte("$apr1$"),
+	SaltLenMin:  1, // Real minimum is 0, but that isn't useful.
+	SaltLenMax:  8,
 }
 
 // Crypt performs the MD5-Crypt hashing algorithm, returning a full hash string
@@ -58,9 +29,9 @@ func GenerateSalt(length int) []byte {
 // SaltLenMax.
 func Crypt(key, salt []byte) (string, error) {
 	if len(salt) == 0 {
-		salt = GenerateSalt(SaltLenMax)
+		salt = Salt.Generate(Salt.SaltLenMax)
 	}
-	if !bytes.HasPrefix(salt, _MagicPrefix) {
+	if !bytes.HasPrefix(salt, Salt.MagicPrefix) {
 		return "", common.ErrSaltPrefix
 	}
 
@@ -84,7 +55,7 @@ func Crypt(key, salt []byte) (string, error) {
 
 	A := md5.New()
 	A.Write(key)
-	A.Write(_MagicPrefix)
+	A.Write(Salt.MagicPrefix)
 	A.Write(salt)
 	i := len(key)
 	for ; i > 16; i -= 16 {
@@ -127,8 +98,8 @@ func Crypt(key, salt []byte) (string, error) {
 		Csum = C.Sum(nil)
 	}
 
-	out := make([]byte, 0, 23+len(MagicPrefix)+len(salt))
-	out = append(out, MagicPrefix...)
+	out := make([]byte, 0, 23+len(Salt.MagicPrefix)+len(salt))
+	out = append(out, Salt.MagicPrefix...)
 	out = append(out, salt...)
 	out = append(out, '$')
 	out = append(out, common.Base64_24Bit([]byte{

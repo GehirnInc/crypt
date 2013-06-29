@@ -11,73 +11,22 @@ package sha512_crypt
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha512"
 	"strconv"
 
 	"github.com/kless/crypt/common"
 )
 
-const (
-	MagicPrefix   = "$6$"
-	RoundsDefault = 5000
-	RoundsMax     = 999999999
-	RoundsMin     = 1000
-	SaltLenMax    = 16
-	SaltLenMin    = 1
-)
-
-var (
-	_MagicPrefix = []byte(MagicPrefix)
-	_rounds      = []byte("rounds=")
-)
-
-// GenerateSalt creates a random salt with the random bytes being of the length
-// provided, and the rounds parameter set as specified.
-//
-// The parameters are set thus:
-//
-//   length > SaltLenMax: length = SaltLenMax
-//   length < SaltLenMin: length = SaltLenMin
-//
-//   rounds < 0: rounds = RoundsDefault
-//   rounds < RoundsMin: rounds = RoundsMin
-//   rounds > RoundsMax: rounds = RoundsMax
-//
-// If rounds is equal to RoundsDefault, then the "rounds=" part of the salt is
-// removed.
-func GenerateSalt(length, rounds int) []byte {
-	if length > SaltLenMax {
-		length = SaltLenMax
-	} else if length < SaltLenMin {
-		length = SaltLenMin
-	}
-	if rounds < 0 {
-		rounds = RoundsDefault
-	} else if rounds < RoundsMin {
-		rounds = RoundsMin
-	} else if rounds > RoundsMax {
-		rounds = RoundsMax
-	}
-
-	saltLen := (length * 6 / 8)
-	if (length*6)%8 != 0 {
-		saltLen += 1
-	}
-	salt := make([]byte, saltLen)
-	rand.Read(salt)
-
-	roundsText := ""
-	if rounds != RoundsDefault {
-		roundsText = "rounds=" + strconv.Itoa(rounds)
-	}
-
-	out := make([]byte, len(_MagicPrefix)+len(roundsText)+length)
-	copy(out, _MagicPrefix)
-	copy(out[len(_MagicPrefix):], []byte(roundsText))
-	copy(out[len(_MagicPrefix)+len(roundsText):], common.Base64_24Bit(salt))
-	return out
+var Salt = &common.Salt{
+	MagicPrefix:   []byte("$6$"),
+	SaltLenMin:    1,
+	SaltLenMax:    16,
+	RoundsMin:     1000,
+	RoundsMax:     999999999,
+	RoundsDefault: 5000,
 }
+
+var _rounds = []byte("rounds=")
 
 // Crypt performs the SHA512-crypt hashing algorithm, returning a full hash
 // string suitable for storage and later password verification.
@@ -89,9 +38,9 @@ func Crypt(key, salt []byte) (string, error) {
 	var isRoundsDef bool
 
 	if len(salt) == 0 {
-		salt = GenerateSalt(SaltLenMax, RoundsDefault)
+		salt = Salt.GenerateWRounds(Salt.SaltLenMax, Salt.RoundsDefault)
 	}
-	if !bytes.HasPrefix(salt, _MagicPrefix) {
+	if !bytes.HasPrefix(salt, Salt.MagicPrefix) {
 		return "", common.ErrSaltPrefix
 	}
 
@@ -108,14 +57,14 @@ func Crypt(key, salt []byte) (string, error) {
 			return "", common.ErrSaltRounds
 		}
 		rounds = int(pr)
-		if rounds < RoundsMin {
-			rounds = RoundsMin
-		} else if rounds > RoundsMax {
-			rounds = RoundsMax
+		if rounds < Salt.RoundsMin {
+			rounds = Salt.RoundsMin
+		} else if rounds > Salt.RoundsMax {
+			rounds = Salt.RoundsMax
 		}
 		salt = saltToks[3]
 	} else {
-		rounds = RoundsDefault
+		rounds = Salt.RoundsDefault
 		salt = saltToks[2]
 	}
 
@@ -198,7 +147,7 @@ func Crypt(key, salt []byte) (string, error) {
 	}
 
 	out := make([]byte, 0, 123)
-	out = append(out, _MagicPrefix...)
+	out = append(out, Salt.MagicPrefix...)
 	if isRoundsDef {
 		out = append(out, []byte("rounds="+strconv.Itoa(rounds)+"$")...)
 	}
