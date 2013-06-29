@@ -5,8 +5,8 @@
 // Package sha256_crypt implements Ulrich Drepper's SHA256-crypt password
 // hashing algorithm.
 //
-// The specification for this algorithm can be
-// found here: http://www.akkadia.org/drepper/SHA-crypt.txt
+// The specification for this algorithm can be found here:
+// http://www.akkadia.org/drepper/SHA-crypt.txt
 package sha256_crypt
 
 import (
@@ -76,9 +76,8 @@ func GenerateSalt(length, rounds int) []byte {
 	return out
 }
 
-// Crypt takes key and salt strings and performs the SHA256-Crypt
-// hashing algorithm on them, returning a full hash string suitable
-// for storage and later password verification.
+// Crypt performs the SHA256-Crypt hashing algorithm, returning a full hash
+// string suitable for storage and later password verification.
 //
 // If the salt is empty, a randomly-generated salt will be generated with a
 // length of SaltLenMax and RoundsDefault number of rounds.

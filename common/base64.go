@@ -12,10 +12,10 @@ const alphabet = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 // The algorithm operates on up to 3 bytes at a time, encoding the following
 // 6-bit sequences into up to 4 hash64 ASCII bytes.
 //
-//     1. Bottom 6 bits of the first byte
-//     2. Top 2 bits of the first byte, and bottom 4 bits of the second byte.
-//     3. Top 4 bits of the second byte, and bottom 2 bits of the third byte.
-//     4. Top 6 bits of the third byte.
+//   1. Bottom 6 bits of the first byte
+//   2. Top 2 bits of the first byte, and bottom 4 bits of the second byte.
+//   3. Top 4 bits of the second byte, and bottom 2 bits of the third byte.
+//   4. Top 6 bits of the third byte.
 //
 // This encoding method does not emit padding bytes as Base64 does.
 func Base64_24Bit(src []byte) (hash []byte) {

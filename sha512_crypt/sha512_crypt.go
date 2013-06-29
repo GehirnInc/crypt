@@ -2,8 +2,8 @@
 // rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package sha512_crypt implements Ulrich Drepper's SHA512-Crypt
-// password hashing algorithm.
+// Package sha512_crypt implements Ulrich Drepper's SHA512-Crypt password
+// hashing algorithm.
 //
 // The specification for this algorithm can be found here:
 // http://www.akkadia.org/drepper/SHA-crypt.txt
@@ -76,9 +76,8 @@ func GenerateSalt(length, rounds int) []byte {
 	return out
 }
 
-// Crypt takes key and salt strings and performs the SHA512-crypt
-// hashing algorithm on them, returning a full hash string suitable
-// for storage and later password verification.
+// Crypt performs the SHA512-crypt hashing algorithm, returning a full hash
+// string suitable for storage and later password verification.
 //
 // If the salt is empty, a randomly-generated salt will be generated with a
 // length of SaltLenMax and RoundsDefault number of rounds.

@@ -2,12 +2,11 @@
 // rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package apr1_crypt implements the standard Unix MD5-Crypt algorithm
-// created by Poul-Henning Kamp for FreeBSD, and modified by the Apache
-// project.
+// Package apr1_crypt implements the standard Unix MD5-Crypt algorithm created
+// by Poul-Henning Kamp for FreeBSD, and modified by the Apache project.
 //
-// The only change from MD5-Crypt is the use of the magic constant
-// "$apr1$" instead of "$1$". The algorithms are otherwise identical.
+// The only change from MD5-Crypt is the use of the magic constant "$apr1$"
+// instead of "$1$". The algorithms are otherwise identical.
 package apr1_crypt
 
 import (
@@ -52,9 +51,8 @@ func GenerateSalt(length int) []byte {
 	return out
 }
 
-// Crypt takes key and salt performing the MD5-Crypt hashing algorithm on them,
-// returning a full hash string suitable for storage and later password
-// verification.
+// Crypt performs the MD5-Crypt hashing algorithm, returning a full hash string
+// suitable for storage and later password verification.
 //
 // If the salt is empty, a randomly-generated salt will be generated of length
 // SaltLenMax.

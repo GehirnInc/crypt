@@ -2,8 +2,8 @@
 // rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package md5_crypt implements the standard Unix MD5-Crypt algorithm
-// created by Poul-Henning Kamp for FreeBSD.
+// Package md5_crypt implements the standard Unix MD5-Crypt algorithm created by
+// Poul-Henning Kamp for FreeBSD.
 package md5_crypt
 
 import (
@@ -49,9 +49,8 @@ func GenerateSalt(length int) []byte {
 	return out
 }
 
-// Crypt takes key and salt performing the MD5-Crypt hashing algorithm on them,
-// returning a full hash string suitable for storage and later password
-// verification.
+// Crypt performs the MD5-Crypt hashing algorithm, returning a full hash string
+// suitable for storage and later password verification.
 //
 // If the salt is empty, a randomly-generated salt will be generated of length
 // SaltLenMax.
