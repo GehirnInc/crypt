@@ -129,7 +129,7 @@ func Generate(key, salt []byte) (string, error) {
 
 	Csum := Asum
 
-	// Clean sensitive data for security.
+	// Clean sensitive data.
 	go func() {
 		A.Reset()
 		Alternate.Reset()

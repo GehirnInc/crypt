@@ -100,15 +100,6 @@ func Generate(key, salt []byte) (string, error) {
 	}
 	Asum := A.Sum(nil)
 
-	// Clean sensitive data for security.
-	go func() {
-		A.Reset()
-		Alternate.Reset()
-		for i = 0; i < len(AlternateSum); i++ {
-			AlternateSum[i] = 0
-		}
-	}()
-
 	// Start computation of P byte sequence.
 	P := sha512.New()
 	// For every character in the password add the entire password.
@@ -138,7 +129,7 @@ func Generate(key, salt []byte) (string, error) {
 
 	Csum := Asum
 
-	// Clean sensitive data for security.
+	// Clean sensitive data.
 	go func() {
 		A.Reset()
 		Alternate.Reset()
