@@ -17,7 +17,6 @@ import (
 const (
 	CiscoSaltLen = 4 // Cisco IOS only allows salts of length 4.
 	MagicPrefix  = "$1$"
-	RandomSalt   = ""
 	SaltLenMax   = 8
 	SaltLenMin   = 1 // Real minimum is 0, but that isn't useful.
 )
@@ -50,12 +49,12 @@ func GenerateSalt(length int) []byte {
 	return out
 }
 
-// Crypt takes key and salt strings and performs the MD5-Crypt hashing
-// algorithm on them, returning a full hash string suitable for storage
-// and later password verification.
+// Crypt takes key and salt performing the MD5-Crypt hashing algorithm on them,
+// returning a full hash string suitable for storage and later password
+// verification.
 //
-// If the salt string is the value RandomSalt, a randomly-generated salt
-// parameter string will be generated of length SaltLenMax.
+// If the salt is nil or empty, a randomly-generated salt will be generated
+// of length SaltLenMax.
 func Crypt(key, salt []byte) string {
 	if salt == nil || len(salt) == 0 {
 		salt = GenerateSalt(SaltLenMax)
@@ -127,11 +126,11 @@ func Crypt(key, salt []byte) string {
 		Csum = C.Sum(nil)
 	}
 
-	buf := make([]byte, 0, 23+len(MagicPrefix)+len(salt))
-	buf = append(buf, MagicPrefix...)
-	buf = append(buf, salt...)
-	buf = append(buf, '$')
-	buf = append(buf, common.Base64_24Bit([]byte{
+	out := make([]byte, 0, 23+len(MagicPrefix)+len(salt))
+	out = append(out, MagicPrefix...)
+	out = append(out, salt...)
+	out = append(out, '$')
+	out = append(out, common.Base64_24Bit([]byte{
 		Csum[12], Csum[6], Csum[0],
 		Csum[13], Csum[7], Csum[1],
 		Csum[14], Csum[8], Csum[2],
@@ -140,9 +139,9 @@ func Crypt(key, salt []byte) string {
 		Csum[11],
 	})...)
 
-	return string(buf)
+	return string(out)
 }
 
-// Verify hashes a key using the same salt parameters as the given
-// hash string, and if the results match, it returns true.
+// Verify hashes a key using the same salt parameter as the given in the hash
+// string, and if the results match, it returns true.
 func Verify(key []byte, hash string) bool { return Crypt(key, []byte(hash)) == hash }

@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
 	"strconv"
 
 	"github.com/kless/crypt/common"
@@ -21,7 +20,6 @@ import (
 
 const (
 	MagicPrefix   = "$5$"
-	RandomSalt    = ""
 	RoundsDefault = 5000
 	RoundsMax     = 999999999
 	RoundsMin     = 1000
@@ -82,9 +80,8 @@ func GenerateSalt(length, rounds int) []byte {
 // hashing algorithm on them, returning a full hash string suitable
 // for storage and later password verification.
 //
-// If the salt string is the value RandomSalt, a randomly-generated
-// salt parameter string will be generated with a length of SaltLenMax
-// and RoundsDefault number of rounds.
+// If the salt is nil or empty, a randomly-generated salt will be generated
+// with a length of SaltLenMax and RoundsDefault number of rounds.
 func Crypt(key, salt []byte) string {
 	var rounds int
 	var roundsdef bool = false
@@ -198,14 +195,14 @@ func Crypt(key, salt []byte) string {
 		Csum = C.Sum(nil)
 	}
 
-	buf := bytes.NewBuffer(make([]byte, 0, 80))
-	buf.Write(_MagicPrefix)
+	out := make([]byte, 0, 80)
+	out = append(out, _MagicPrefix...)
 	if roundsdef {
-		buf.WriteString(fmt.Sprintf("rounds=%d$", rounds))
+		out = append(out, []byte("rounds="+strconv.Itoa(rounds)+"$")...)
 	}
-	buf.Write(salt)
-	buf.WriteByte('$')
-	buf.Write(common.Base64_24Bit([]byte{
+	out = append(out, salt...)
+	out = append(out, '$')
+	out = append(out, common.Base64_24Bit([]byte{
 		Csum[20], Csum[10], Csum[0],
 		Csum[11], Csum[1], Csum[21],
 		Csum[2], Csum[22], Csum[12],
@@ -217,11 +214,11 @@ func Crypt(key, salt []byte) string {
 		Csum[8], Csum[28], Csum[18],
 		Csum[29], Csum[19], Csum[9],
 		Csum[30], Csum[31],
-	}))
+	})...)
 
-	return buf.String()
+	return string(out)
 }
 
-// Verify hashes a key using the same salt parameters as the
-// given hash string, and if the results match, it returns true.
+// Verify hashes a key using the same salt parameter as the given in the hash
+// string, and if the results match, it returns true.
 func Verify(key []byte, hash string) bool { return Crypt(key, []byte(hash)) == hash }
