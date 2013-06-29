@@ -46,21 +46,29 @@ func Crypt(key, salt []byte) (string, error) {
 		salt = salt[0:8]
 	}
 
-	B := md5.New()
-	B.Write(key)
-	B.Write(salt)
-	B.Write(key)
-	Bsum := B.Sum(nil)
+	// Compute alternate MD5 sum with input KEY, SALT, and KEY.
+	Alternate := md5.New()
+	Alternate.Write(key)
+	Alternate.Write(salt)
+	Alternate.Write(key)
+	AlternateSum := Alternate.Sum(nil) // 16 bytes
 
 	A := md5.New()
 	A.Write(key)
 	A.Write(Salt.MagicPrefix)
 	A.Write(salt)
+	// Add for any character in the key one byte of the alternate sum.
 	i := len(key)
 	for ; i > 16; i -= 16 {
-		A.Write(Bsum)
+		A.Write(AlternateSum)
 	}
-	A.Write(Bsum[0:i])
+	A.Write(AlternateSum[0:i])
+
+	// The original implementation now does something weird:
+	//   For every 1 bit in the key, the first 0 is added to the buffer
+	//   For every 0 bit, the first character of the key
+	// This does not seem to be what was intended but we have to follow this to
+	// be compatible.
 	for i = len(key); i > 0; i >>= 1 {
 		if (i & 1) == 0 {
 			A.Write(key[0:1])
@@ -68,27 +76,30 @@ func Crypt(key, salt []byte) (string, error) {
 			A.Write([]byte{0})
 		}
 	}
-	Asum := A.Sum(nil)
+	Csum := A.Sum(nil)
 
-	Csum := Asum
-	for round := 0; round < 1000; round++ {
+	// In fear of password crackers here comes a quite long loop which just
+	// processes the output of the previous round again.
+	// We cannot ignore this here.
+	for i = 0; i < 1000; i++ {
 		C := md5.New()
 
-		if (round & 1) != 0 {
+		// Add key or last result.
+		if (i & 1) != 0 {
 			C.Write(key)
 		} else {
 			C.Write(Csum)
 		}
-
-		if (round % 3) != 0 {
+		// Add salt for numbers not divisible by 3.
+		if (i % 3) != 0 {
 			C.Write(salt)
 		}
-
-		if (round % 7) != 0 {
+		// Add key for numbers not divisible by 7.
+		if (i % 7) != 0 {
 			C.Write(key)
 		}
-
-		if (round & 1) == 0 {
+		// Add key or last result.
+		if (i & 1) == 0 {
 			C.Write(key)
 		} else {
 			C.Write(Csum)

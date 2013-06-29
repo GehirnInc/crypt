@@ -72,47 +72,55 @@ func Crypt(key, salt []byte) (string, error) {
 		salt = salt[0:16]
 	}
 
-	B := sha256.New()
-	B.Write(key)
-	B.Write(salt)
-	B.Write(key)
-	Bsum := B.Sum(nil)
+	// Compute alternate SHA256 sum with input KEY, SALT, and KEY.
+	Alternate := sha256.New()
+	Alternate.Write(key)
+	Alternate.Write(salt)
+	Alternate.Write(key)
+	AlternateSum := Alternate.Sum(nil) // 32 bytes
 
 	A := sha256.New()
 	A.Write(key)
 	A.Write(salt)
+	// Add for any character in the key one byte of the alternate sum.
 	i := len(key)
 	for ; i > 32; i -= 32 {
-		A.Write(Bsum)
+		A.Write(AlternateSum)
 	}
-	A.Write(Bsum[0:i])
+	A.Write(AlternateSum[0:i])
+
+	// Take the binary representation of the length of the key and for every add
+	// the alternate sum, for every 0 the key.
 	for i = len(key); i > 0; i >>= 1 {
 		if (i & 1) != 0 {
-			A.Write(Bsum)
+			A.Write(AlternateSum)
 		} else {
 			A.Write(key)
 		}
 	}
 	Asum := A.Sum(nil)
 
+	// Start computation of P byte sequence.
 	P := sha256.New()
+	// For every character in the password add the entire password.
 	for i = 0; i < len(key); i++ {
 		P.Write(key)
 	}
 	Psum := P.Sum(nil)
-
+	// Create byte sequence P.
 	Pseq := make([]byte, 0, len(key))
 	for i = len(key); i > 32; i -= 32 {
 		Pseq = append(Pseq, Psum...)
 	}
 	Pseq = append(Pseq, Psum[0:i]...)
 
+	// Start computation of S byte sequence.
 	S := sha256.New()
 	for i = 0; i < (16 + int(Asum[0])); i++ {
 		S.Write(salt)
 	}
 	Ssum := S.Sum(nil)
-
+	// Create byte sequence S.
 	Sseq := make([]byte, 0, len(salt))
 	for i = len(salt); i > 32; i -= 32 {
 		Sseq = append(Sseq, Ssum...)
@@ -120,24 +128,26 @@ func Crypt(key, salt []byte) (string, error) {
 	Sseq = append(Sseq, Ssum[0:i]...)
 
 	Csum := Asum
-	for round := 0; round < rounds; round++ {
+	// Repeatedly run the collected hash value through SHA256 to burn CPU cycles.
+	for i = 0; i < rounds; i++ {
 		C := sha256.New()
 
-		if (round & 1) != 0 {
+		// Add key or last result.
+		if (i & 1) != 0 {
 			C.Write(Pseq)
 		} else {
 			C.Write(Csum)
 		}
-
-		if (round % 3) != 0 {
+		// Add salt for numbers not divisible by 3.
+		if (i % 3) != 0 {
 			C.Write(Sseq)
 		}
-
-		if (round % 7) != 0 {
+		// Add key for numbers not divisible by 7.
+		if (i % 7) != 0 {
 			C.Write(Pseq)
 		}
-
-		if (round & 1) != 0 {
+		// Add key or last result.
+		if (i & 1) != 0 {
 			C.Write(Csum)
 		} else {
 			C.Write(Pseq)
