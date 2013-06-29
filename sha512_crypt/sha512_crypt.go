@@ -27,7 +27,10 @@ const (
 	SaltLenMin    = 1
 )
 
-var _MagicPrefix = []byte(MagicPrefix)
+var (
+	_MagicPrefix = []byte(MagicPrefix)
+	_rounds      = []byte("rounds=")
+)
 
 // GenerateSalt creates a random salt with the random bytes being of the length
 // provided, and the rounds parameter set as specified.
@@ -83,7 +86,7 @@ func GenerateSalt(length, rounds int) []byte {
 // length of SaltLenMax and RoundsDefault number of rounds.
 func Crypt(key, salt []byte) string {
 	var rounds int
-	var roundsdef bool = false
+	var isRoundsDef bool
 
 	if len(salt) == 0 {
 		salt = GenerateSalt(SaltLenMax, RoundsDefault)
@@ -98,8 +101,8 @@ func Crypt(key, salt []byte) string {
 		return "invalid salt format"
 	}
 
-	if bytes.HasPrefix(saltToks[2], []byte("rounds=")) {
-		roundsdef = true
+	if bytes.HasPrefix(saltToks[2], _rounds) {
+		isRoundsDef = true
 		pr, err := strconv.ParseInt(string(saltToks[2][7:]), 10, 32)
 		if err != nil {
 			return "invalid rounds"
@@ -196,7 +199,7 @@ func Crypt(key, salt []byte) string {
 
 	out := make([]byte, 0, 123)
 	out = append(out, _MagicPrefix...)
-	if roundsdef {
+	if isRoundsDef {
 		out = append(out, []byte("rounds="+strconv.Itoa(rounds)+"$")...)
 	}
 	out = append(out, salt...)
