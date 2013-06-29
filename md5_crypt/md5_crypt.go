@@ -53,10 +53,10 @@ func GenerateSalt(length int) []byte {
 // returning a full hash string suitable for storage and later password
 // verification.
 //
-// If the salt is nil or empty, a randomly-generated salt will be generated
-// of length SaltLenMax.
+// If the salt is empty, a randomly-generated salt will be generated of length
+// SaltLenMax.
 func Crypt(key, salt []byte) string {
-	if salt == nil || len(salt) == 0 {
+	if len(salt) == 0 {
 		salt = GenerateSalt(SaltLenMax)
 	}
 	if !bytes.HasPrefix(salt, _MagicPrefix) {

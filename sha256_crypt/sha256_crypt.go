@@ -80,13 +80,13 @@ func GenerateSalt(length, rounds int) []byte {
 // hashing algorithm on them, returning a full hash string suitable
 // for storage and later password verification.
 //
-// If the salt is nil or empty, a randomly-generated salt will be generated
-// with a length of SaltLenMax and RoundsDefault number of rounds.
+// If the salt is empty, a randomly-generated salt will be generated with a
+// length of SaltLenMax and RoundsDefault number of rounds.
 func Crypt(key, salt []byte) string {
 	var rounds int
 	var roundsdef bool = false
 
-	if salt == nil || len(salt) == 0 {
+	if len(salt) == 0 {
 		salt = GenerateSalt(SaltLenMax, RoundsDefault)
 	}
 	if !bytes.HasPrefix(salt, _MagicPrefix) {
