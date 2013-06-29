@@ -61,8 +61,7 @@ func TestCrypt(t *testing.T) {
 	for i, d := range data {
 		hash, _ := Crypt(d.key, d.salt)
 		if hash != d.out {
-			t.Errorf("Test %d failed\nExpected: %s\n     Saw: %s",
-				i, d.out, hash)
+			t.Errorf("Test %d failed\nExpected: %s\n     Got: %s", i, d.out, hash)
 		}
 	}
 }

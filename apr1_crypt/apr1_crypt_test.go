@@ -54,8 +54,7 @@ func TestCrypt(t *testing.T) {
 	for i, d := range data {
 		hash, _ := Crypt(d.key, d.salt)
 		if hash != d.out {
-			t.Errorf("Test %d failed\nExpected: %s\n     Saw: %s",
-				i, d.out, hash)
+			t.Errorf("Test %d failed\nExpected: %s\n     Got: %s", i, d.out, hash)
 		}
 	}
 }
@@ -74,24 +73,5 @@ func TestVerify(t *testing.T) {
 		if !Verify(d, hash) {
 			t.Errorf("Test %d failed: %s", i, d)
 		}
-	}
-}
-
-func TestGenerateSalt(t *testing.T) {
-	salt := Salt.Generate(0)
-	if len(salt) != len(Salt.MagicPrefix)+1 {
-		t.Errorf("Expected len 1, saw len %d", len(salt))
-	}
-
-	for i := 1; i <= 8; i++ {
-		salt = Salt.Generate(i)
-		if len(salt) != len(Salt.MagicPrefix)+i {
-			t.Errorf("Expected len %d, saw len %d", i, len(salt))
-		}
-	}
-
-	salt = Salt.Generate(9)
-	if len(salt) != len(Salt.MagicPrefix)+8 {
-		t.Errorf("Expected len 8, saw len %d", len(salt))
 	}
 }
