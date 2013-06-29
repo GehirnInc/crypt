@@ -2,7 +2,7 @@
 // rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package md5_crypt implements the standard Unix MD5-Crypt algorithm created by
+// Package md5_crypt implements the standard Unix MD5-crypt algorithm created by
 // Poul-Henning Kamp for FreeBSD.
 package md5_crypt
 
@@ -21,12 +21,12 @@ var Salt = &common.Salt{
 	SaltLenMax:  8,
 }
 
-// Crypt performs the MD5-Crypt hashing algorithm, returning a full hash string
+// Generate performs the MD5-crypt hashing algorithm, returning a full hash
 // suitable for storage and later password verification.
 //
 // If the salt is empty, a randomly-generated salt will be generated of length
 // SaltLenMax.
-func Crypt(key, salt []byte) (string, error) {
+func Generate(key, salt []byte) (string, error) {
 	if len(salt) == 0 {
 		salt = Salt.Generate(Salt.SaltLenMax)
 	}
@@ -124,12 +124,12 @@ func Crypt(key, salt []byte) (string, error) {
 	return string(out), nil
 }
 
-// Verify hashes a key using the same salt parameter as the given in the hash
-// string, and if the results match, it returns true.
+// Verify hashes a key using the same salt parameter as the given in the hash,
+// and if the results match, it returns true.
 func Verify(key []byte, hash string) bool {
-	c, err := Crypt(key, []byte(hash))
+	newHash, err := Generate(key, []byte(hash))
 	if err != nil {
 		return false
 	}
-	return c == hash
+	return newHash == hash
 }

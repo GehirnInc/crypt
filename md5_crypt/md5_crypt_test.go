@@ -6,7 +6,7 @@ package md5_crypt
 
 import "testing"
 
-func TestCrypt(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	data := []struct {
 		salt []byte
 		key  []byte
@@ -52,7 +52,7 @@ func TestCrypt(t *testing.T) {
 	}
 
 	for i, d := range data {
-		hash, _ := Crypt(d.key, d.salt)
+		hash, _ := Generate(d.key, d.salt)
 		if hash != d.out {
 			t.Errorf("Test %d failed\nExpected: %s\n     Got: %s", i, d.out, hash)
 		}
@@ -69,7 +69,7 @@ func TestVerify(t *testing.T) {
 		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
-		hash, _ := Crypt(d, nil)
+		hash, _ := Generate(d, nil)
 		if !Verify(d, hash) {
 			t.Errorf("Test %d failed: %s", i, d)
 		}

@@ -28,12 +28,12 @@ var Salt = &common.Salt{
 
 var _rounds = []byte("rounds=")
 
-// Crypt performs the SHA256-Crypt hashing algorithm, returning a full hash
-// string suitable for storage and later password verification.
+// Generate performs the SHA256-crypt hashing algorithm, returning a full hash
+// suitable for storage and later password verification.
 //
 // If the salt is empty, a randomly-generated salt will be generated with a
 // length of SaltLenMax and RoundsDefault number of rounds.
-func Crypt(key, salt []byte) (string, error) {
+func Generate(key, salt []byte) (string, error) {
 	var rounds int
 	var isRoundsDef bool
 
@@ -180,12 +180,12 @@ func Crypt(key, salt []byte) (string, error) {
 	return string(out), nil
 }
 
-// Verify hashes a key using the same salt parameter as the given in the hash
-// string, and if the results match, it returns true.
+// Verify hashes a key using the same salt parameter as the given in the hash,
+// and if the results match, it returns true.
 func Verify(key []byte, hash string) bool {
-	c, err := Crypt(key, []byte(hash))
+	newHash, err := Generate(key, []byte(hash))
 	if err != nil {
 		return false
 	}
-	return c == hash
+	return newHash == hash
 }
