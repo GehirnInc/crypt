@@ -100,6 +100,15 @@ func Generate(key, salt []byte) (string, error) {
 	}
 	Asum := A.Sum(nil)
 
+	// Clean sensitive data for security.
+	go func() {
+		A.Reset()
+		Alternate.Reset()
+		for i = 0; i < len(AlternateSum); i++ {
+			AlternateSum[i] = 0
+		}
+	}()
+
 	// Start computation of P byte sequence.
 	P := sha512.New()
 	// For every character in the password add the entire password.
@@ -128,6 +137,21 @@ func Generate(key, salt []byte) (string, error) {
 	Sseq = append(Sseq, Ssum[0:i]...)
 
 	Csum := Asum
+
+	// Clean sensitive data for security.
+	go func() {
+		A.Reset()
+		Alternate.Reset()
+		P.Reset()
+
+		for i = 0; i < len(Asum); i++ {
+			Asum[i] = 0
+		}
+		for i = 0; i < len(AlternateSum); i++ {
+			AlternateSum[i] = 0
+		}
+	}()
+
 	// Repeatedly run the collected hash value through SHA512 to burn CPU cycles.
 	for i = 0; i < rounds; i++ {
 		C := sha512.New()
@@ -187,6 +211,14 @@ func Generate(key, salt []byte) (string, error) {
 		Csum[41], Csum[20], Csum[62],
 		Csum[63],
 	})...)
+
+	// Clean sensitive data.
+	for i = 0; i < len(Pseq); i++ {
+		Pseq[i] = 0
+	}
+	for i = 0; i < len(Csum); i++ {
+		Csum[i] = 0
+	}
 
 	return string(out), nil
 }

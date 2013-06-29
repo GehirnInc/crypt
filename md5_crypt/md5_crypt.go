@@ -78,6 +78,15 @@ func Generate(key, salt []byte) (string, error) {
 	}
 	Csum := A.Sum(nil)
 
+	// Clean sensitive data for security.
+	go func() {
+		A.Reset()
+		Alternate.Reset()
+		for i = 0; i < len(AlternateSum); i++ {
+			AlternateSum[i] = 0
+		}
+	}()
+
 	// In fear of password crackers here comes a quite long loop which just
 	// processes the output of the previous round again.
 	// We cannot ignore this here.
@@ -120,6 +129,11 @@ func Generate(key, salt []byte) (string, error) {
 		Csum[5], Csum[10], Csum[4],
 		Csum[11],
 	})...)
+
+	// Clean sensitive data.
+	for i = 0; i < len(Csum); i++ {
+		Csum[i] = 0
+	}
 
 	return string(out), nil
 }

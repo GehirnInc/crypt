@@ -128,6 +128,21 @@ func Generate(key, salt []byte) (string, error) {
 	Sseq = append(Sseq, Ssum[0:i]...)
 
 	Csum := Asum
+
+	// Clean sensitive data for security.
+	go func() {
+		A.Reset()
+		Alternate.Reset()
+		P.Reset()
+
+		for i = 0; i < len(Asum); i++ {
+			Asum[i] = 0
+		}
+		for i = 0; i < len(AlternateSum); i++ {
+			AlternateSum[i] = 0
+		}
+	}()
+
 	// Repeatedly run the collected hash value through SHA256 to burn CPU cycles.
 	for i = 0; i < rounds; i++ {
 		C := sha256.New()
@@ -176,6 +191,14 @@ func Generate(key, salt []byte) (string, error) {
 		Csum[29], Csum[19], Csum[9],
 		Csum[30], Csum[31],
 	})...)
+
+	// Clean sensitive data.
+	for i = 0; i < len(Pseq); i++ {
+		Pseq[i] = 0
+	}
+	for i = 0; i < len(Csum); i++ {
+		Csum[i] = 0
+	}
 
 	return string(out), nil
 }
