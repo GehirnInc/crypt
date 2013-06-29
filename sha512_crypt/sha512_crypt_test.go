@@ -59,7 +59,7 @@ func TestCrypt(t *testing.T) {
 	}
 
 	for i, d := range data {
-		hash := Crypt(d.key, d.salt)
+		hash, _ := Crypt(d.key, d.salt)
 		if hash != d.out {
 			t.Errorf("Test %d failed\nExpected: %s\n     Saw: %s",
 				i, d.out, hash)
@@ -77,7 +77,7 @@ func TestVerify(t *testing.T) {
 		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
-		hash := Crypt(d, nil)
+		hash, _ := Crypt(d, nil)
 		if !Verify(d, hash) {
 			t.Errorf("Test %d failed: %s", i, d)
 		}

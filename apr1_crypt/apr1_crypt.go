@@ -56,18 +56,18 @@ func GenerateSalt(length int) []byte {
 //
 // If the salt is empty, a randomly-generated salt will be generated of length
 // SaltLenMax.
-func Crypt(key, salt []byte) string {
+func Crypt(key, salt []byte) (string, error) {
 	if len(salt) == 0 {
 		salt = GenerateSalt(SaltLenMax)
 	}
 	if !bytes.HasPrefix(salt, _MagicPrefix) {
-		return "invalid magic prefix"
+		return "", common.ErrSaltPrefix
 	}
 
 	saltToks := bytes.Split(salt, []byte{'$'})
 
 	if len(saltToks) < 3 {
-		return "invalid salt format"
+		return "", common.ErrSaltFormat
 	} else {
 		salt = saltToks[2]
 	}
@@ -140,9 +140,15 @@ func Crypt(key, salt []byte) string {
 		Csum[11],
 	})...)
 
-	return string(out)
+	return string(out), nil
 }
 
 // Verify hashes a key using the same salt parameter as the given in the hash
 // string, and if the results match, it returns true.
-func Verify(key []byte, hash string) bool { return Crypt(key, []byte(hash)) == hash }
+func Verify(key []byte, hash string) bool {
+	c, err := Crypt(key, []byte(hash))
+	if err != nil {
+		return false
+	}
+	return c == hash
+}

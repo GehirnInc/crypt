@@ -84,7 +84,7 @@ func GenerateSalt(length, rounds int) []byte {
 //
 // If the salt is empty, a randomly-generated salt will be generated with a
 // length of SaltLenMax and RoundsDefault number of rounds.
-func Crypt(key, salt []byte) string {
+func Crypt(key, salt []byte) (string, error) {
 	var rounds int
 	var isRoundsDef bool
 
@@ -92,20 +92,20 @@ func Crypt(key, salt []byte) string {
 		salt = GenerateSalt(SaltLenMax, RoundsDefault)
 	}
 	if !bytes.HasPrefix(salt, _MagicPrefix) {
-		return "invalid prefix"
+		return "", common.ErrSaltPrefix
 	}
 
 	saltToks := bytes.Split(salt, []byte{'$'})
 
 	if len(saltToks) < 3 {
-		return "invalid salt format"
+		return "", common.ErrSaltFormat
 	}
 
 	if bytes.HasPrefix(saltToks[2], _rounds) {
 		isRoundsDef = true
 		pr, err := strconv.ParseInt(string(saltToks[2][7:]), 10, 32)
 		if err != nil {
-			return "invalid rounds"
+			return "", common.ErrSaltRounds
 		}
 		rounds = int(pr)
 		if rounds < RoundsMin {
@@ -218,9 +218,15 @@ func Crypt(key, salt []byte) string {
 		Csum[30], Csum[31],
 	})...)
 
-	return string(out)
+	return string(out), nil
 }
 
 // Verify hashes a key using the same salt parameter as the given in the hash
 // string, and if the results match, it returns true.
-func Verify(key []byte, hash string) bool { return Crypt(key, []byte(hash)) == hash }
+func Verify(key []byte, hash string) bool {
+	c, err := Crypt(key, []byte(hash))
+	if err != nil {
+		return false
+	}
+	return c == hash
+}
