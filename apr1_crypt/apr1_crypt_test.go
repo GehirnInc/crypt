@@ -8,42 +8,42 @@ import "testing"
 
 func TestCrypt(t *testing.T) {
 	data := []struct {
-		salt string
+		salt []byte
 		key  []byte
 		out  string
 	}{
 		{
-			"$apr1$$",
+			[]byte("$apr1$$"),
 			[]byte("abcdefghijk"),
 			"$apr1$$NTjzQjNZnhYRPxN6ryN191",
 		},
 		{
-			"$apr1$an overlong salt$",
+			[]byte("$apr1$an overlong salt$"),
 			[]byte("abcdefgh"),
 			"$apr1$an overl$iroRZrWCEoQojCkf6p8LC0",
 		},
 		{
-			"$apr1$12345678$",
+			[]byte("$apr1$12345678$"),
 			[]byte("Lorem ipsum dolor sit amet"),
 			"$apr1$12345678$/DpfgRGBHG8N0cbkmw0Fk/",
 		},
 		{
-			"$apr1$deadbeef$",
+			[]byte("$apr1$deadbeef$"),
 			[]byte("password"),
 			"$apr1$deadbeef$NWLhx1Ai4ScyoaAboTFco.",
 		},
 		{
-			"$apr1$$",
+			[]byte("$apr1$$"),
 			[]byte("missing salt"),
 			"$apr1$$EcorjwkoQz4mYcksVEk6j0",
 		},
 		{
-			"$apr1$holy-moly-batman$",
+			[]byte("$apr1$holy-moly-batman$"),
 			[]byte("1234567"),
 			"$apr1$holy-mol$/WX0350ZUEkvQkrrVJsrU.",
 		},
 		{
-			"$apr1$asdfjkl;$",
+			[]byte("$apr1$asdfjkl;$"),
 			[]byte("A really long password. " +
 				"Longer than a password has any righ" +
 				"t to be. Hey bub, don't mess with t" +
@@ -70,7 +70,7 @@ func TestVerify(t *testing.T) {
 		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
-		hash := Crypt(d, "")
+		hash := Crypt(d, nil)
 		if !Verify(d, hash) {
 			t.Errorf("Test %d failed: %s", i, d)
 		}

@@ -8,42 +8,42 @@ import "testing"
 
 func TestCrypt(t *testing.T) {
 	data := []struct {
-		salt string
+		salt []byte
 		key  []byte
 		out  string
 	}{
 		{
-			"$1$$",
+			[]byte("$1$$"),
 			[]byte("abcdefghijk"),
 			"$1$$pL/BYSxMXs.jVuSV1lynn1",
 		},
 		{
-			"$1$an overlong salt$",
+			[]byte("$1$an overlong salt$"),
 			[]byte("abcdfgh"),
 			"$1$an overl$ZYftmJDIw8sG5s4gG6r.70",
 		},
 		{
-			"$1$12345678$",
+			[]byte("$1$12345678$"),
 			[]byte("Lorem ipsum dolor sit amet"),
 			"$1$12345678$Suzx8CrBlkNJwVHHHv5tZ.",
 		},
 		{
-			"$1$deadbeef$",
+			[]byte("$1$deadbeef$"),
 			[]byte("password"),
 			"$1$deadbeef$Q7g0UO4hRC0mgQUQ/qkjZ0",
 		},
 		{
-			"$1$$",
+			[]byte("$1$$"),
 			[]byte("missing salt"),
 			"$1$$Lv61fbMiEGprscPkdE9Iw/",
 		},
 		{
-			"$1$holy-moly-batman$",
+			[]byte("$1$holy-moly-batman$"),
 			[]byte("1234567"),
 			"$1$holy-mol$WKomB0dWknSxdW/e8WYHG0",
 		},
 		{
-			"$1$asdfjkl;$",
+			[]byte("$1$asdfjkl;$"),
 			[]byte("A really long password. Longer " +
 				"than a password has any right to be" +
 				". Hey bub, don't mess with this password."),
@@ -70,7 +70,7 @@ func TestVerify(t *testing.T) {
 		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
-		hash := Crypt(d, "")
+		hash := Crypt(d, nil)
 		if !Verify(d, hash) {
 			t.Errorf("Test %d failed: %s", i, d)
 		}

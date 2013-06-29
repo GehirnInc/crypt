@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/rand"
-	"fmt"
 
 	"github.com/kless/crypt/common"
 )
@@ -23,25 +22,32 @@ const (
 	SaltLenMin   = 1 // Real minimum is 0, but that isn't useful.
 )
 
-// Generate a random salt parameter string of a given length.
+var _MagicPrefix = []byte(MagicPrefix)
+
+// GenerateSalt generates a random salt of a given length.
 //
-// If the length is greater than SaltLenMax, a string of that length
-// will be returned instead. Similarly, if length is less than
-// SaltLenMin, a string of that length will be returned instead.
-func GenerateSalt(length int) string {
+// The length is set thus:
+//
+//   length > SaltLenMax: length = SaltLenMax
+//   length < SaltLenMin: length = SaltLenMin
+func GenerateSalt(length int) []byte {
 	if length > SaltLenMax {
 		length = SaltLenMax
 	} else if length < SaltLenMin {
 		length = SaltLenMin
 	}
-	rlen := (length * 6 / 8)
+
+	saltLen := (length * 6 / 8)
 	if (length*6)%8 != 0 {
-		rlen += 1
+		saltLen += 1
 	}
-	buf := make([]byte, rlen)
-	rand.Read(buf)
-	salt := common.Base64_24Bit(buf)
-	return fmt.Sprintf("%s%s", MagicPrefix, salt[:length])
+	salt := make([]byte, saltLen)
+	rand.Read(salt)
+
+	out := make([]byte, len(_MagicPrefix)+length)
+	copy(out, _MagicPrefix)
+	copy(out[len(_MagicPrefix):], common.Base64_24Bit(salt))
+	return out
 }
 
 // Crypt takes key and salt strings and performs the MD5-Crypt hashing
@@ -50,18 +56,15 @@ func GenerateSalt(length int) string {
 //
 // If the salt string is the value RandomSalt, a randomly-generated salt
 // parameter string will be generated of length SaltLenMax.
-func Crypt(key []byte, saltstr string) string {
-	var salt []byte
-
-	if saltstr == "" {
-		saltstr = GenerateSalt(SaltLenMax)
+func Crypt(key, salt []byte) string {
+	if salt == nil || len(salt) == 0 {
+		salt = GenerateSalt(SaltLenMax)
 	}
-	saltbytes := []byte(saltstr)
-	if !bytes.HasPrefix(saltbytes, []byte(MagicPrefix)) {
+	if !bytes.HasPrefix(salt, _MagicPrefix) {
 		return "invalid magic prefix"
 	}
 
-	saltToks := bytes.Split(saltbytes, []byte{'$'})
+	saltToks := bytes.Split(salt, []byte{'$'})
 
 	if len(saltToks) < 3 {
 		return "invalid salt format"
@@ -81,7 +84,7 @@ func Crypt(key []byte, saltstr string) string {
 
 	A := md5.New()
 	A.Write(key)
-	A.Write([]byte(MagicPrefix))
+	A.Write(_MagicPrefix)
 	A.Write(salt)
 	i := len(key)
 	for ; i > 16; i -= 16 {
@@ -142,4 +145,4 @@ func Crypt(key []byte, saltstr string) string {
 
 // Verify hashes a key using the same salt parameters as the given
 // hash string, and if the results match, it returns true.
-func Verify(key []byte, hash string) bool { return Crypt(key, hash) == hash }
+func Verify(key []byte, hash string) bool { return Crypt(key, []byte(hash)) == hash }

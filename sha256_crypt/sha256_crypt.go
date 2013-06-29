@@ -29,38 +29,53 @@ const (
 	SaltLenMin    = 1
 )
 
-// GenerateSalt creates a random salt parameter string with the random
-// bytes being of the length provided, and the rounds parameter set as
-// specified.
+var _MagicPrefix = []byte(MagicPrefix)
+
+// GenerateSalt creates a random salt with the random bytes being of the length
+// provided, and the rounds parameter set as specified.
 //
-// If the length is greater than SaltLenMax, a string of that length
-// will be returned instead. Similarly, if length is less than
-// SaltLenMin, a string of that length will be returned instead.
+// The parameters are set thus:
 //
-// If rounds is equal to RoundsDefault, then the 'rounds=' part of the
-// salt parameter string is elided.
-func GenerateSalt(length, rounds int) string {
+//   length > SaltLenMax: length = SaltLenMax
+//   length < SaltLenMin: length = SaltLenMin
+//
+//   rounds < 0: rounds = RoundsDefault
+//   rounds < RoundsMin: rounds = RoundsMin
+//   rounds > RoundsMax: rounds = RoundsMax
+//
+// If rounds is equal to RoundsDefault, then the "rounds=" part of the salt is
+// removed.
+func GenerateSalt(length, rounds int) []byte {
 	if length > SaltLenMax {
 		length = SaltLenMax
 	} else if length < SaltLenMin {
 		length = SaltLenMin
 	}
-	rlen := (length * 6 / 8)
-	if (length*6)%8 != 0 {
-		rlen += 1
-	}
-	if rounds < RoundsMin {
+	if rounds < 0 {
+		rounds = RoundsDefault
+	} else if rounds < RoundsMin {
 		rounds = RoundsMin
 	} else if rounds > RoundsMax {
 		rounds = RoundsMax
 	}
-	buf := make([]byte, rlen)
-	rand.Read(buf)
-	salt := common.Base64_24Bit(buf)
-	if rounds == RoundsDefault {
-		return fmt.Sprintf("%s%s", MagicPrefix, salt)
+
+	saltLen := (length * 6 / 8)
+	if (length*6)%8 != 0 {
+		saltLen += 1
 	}
-	return fmt.Sprintf("%srounds=%d$%s", MagicPrefix, rounds, salt)
+	salt := make([]byte, saltLen)
+	rand.Read(salt)
+
+	roundsText := ""
+	if rounds != RoundsDefault {
+		roundsText = "rounds=" + strconv.Itoa(rounds)
+	}
+
+	out := make([]byte, len(_MagicPrefix)+len(roundsText)+length)
+	copy(out, _MagicPrefix)
+	copy(out[len(_MagicPrefix):], []byte(roundsText))
+	copy(out[len(_MagicPrefix)+len(roundsText):], common.Base64_24Bit(salt))
+	return out
 }
 
 // Crypt takes key and salt strings and performs the SHA256-Crypt
@@ -70,20 +85,18 @@ func GenerateSalt(length, rounds int) string {
 // If the salt string is the value RandomSalt, a randomly-generated
 // salt parameter string will be generated with a length of SaltLenMax
 // and RoundsDefault number of rounds.
-func Crypt(key []byte, saltstr string) string {
-	var salt []byte
+func Crypt(key, salt []byte) string {
 	var rounds int
 	var roundsdef bool = false
 
-	if saltstr == "" {
-		saltstr = GenerateSalt(SaltLenMax, RoundsDefault)
+	if salt == nil || len(salt) == 0 {
+		salt = GenerateSalt(SaltLenMax, RoundsDefault)
 	}
-	saltbytes := []byte(saltstr)
-	if !bytes.HasPrefix(saltbytes, []byte(MagicPrefix)) {
+	if !bytes.HasPrefix(salt, _MagicPrefix) {
 		return "invalid prefix"
 	}
 
-	saltToks := bytes.Split(saltbytes, []byte{'$'})
+	saltToks := bytes.Split(salt, []byte{'$'})
 
 	if len(saltToks) < 3 {
 		return "invalid salt format"
@@ -186,7 +199,7 @@ func Crypt(key []byte, saltstr string) string {
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 0, 80))
-	buf.WriteString(MagicPrefix)
+	buf.Write(_MagicPrefix)
 	if roundsdef {
 		buf.WriteString(fmt.Sprintf("rounds=%d$", rounds))
 	}
@@ -211,4 +224,4 @@ func Crypt(key []byte, saltstr string) string {
 
 // Verify hashes a key using the same salt parameters as the
 // given hash string, and if the results match, it returns true.
-func Verify(key []byte, hash string) bool { return Crypt(key, hash) == hash }
+func Verify(key []byte, hash string) bool { return Crypt(key, []byte(hash)) == hash }
