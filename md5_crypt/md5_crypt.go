@@ -14,6 +14,8 @@ import (
 	"github.com/kless/crypt/common"
 )
 
+const Rounds = 1000
+
 // NOTE: Cisco IOS only allows salts of length 4.
 
 var Salt = &common.Salt{
@@ -42,7 +44,6 @@ func Generate(key, salt []byte) (string, error) {
 	} else {
 		salt = saltToks[2]
 	}
-
 	if len(salt) > 8 {
 		salt = salt[0:8]
 	}
@@ -91,7 +92,7 @@ func Generate(key, salt []byte) (string, error) {
 	// In fear of password crackers here comes a quite long loop which just
 	// processes the output of the previous round again.
 	// We cannot ignore this here.
-	for i = 0; i < 1000; i++ {
+	for i = 0; i < Rounds; i++ {
 		C := md5.New()
 
 		// Add key or last result.
@@ -138,13 +139,17 @@ func Generate(key, salt []byte) (string, error) {
 // string.
 // Returns nil on success, or an error on failure; if the hashed key is diffrent,
 // the error is "crypt.ErrKeyMismatch".
-func Verify(hash string, key []byte) error {
-	newHash, err := Generate(key, []byte(hash))
+func Verify(hashedKey string, key []byte) error {
+	newHash, err := Generate(key, []byte(hashedKey))
 	if err != nil {
 		return err
 	}
-	if newHash != hash {
+	if newHash != hashedKey {
 		return crypt.ErrKeyMismatch
 	}
 	return nil
 }
+
+// Cost returns the hashing cost (in rounds) used to create the given hashed key.
+// The MD5-crypt algorithm uses a fixed value of rounds.
+func Cost(hashedKey string) (int, error) { return Rounds, nil }

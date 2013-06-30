@@ -9,10 +9,7 @@
 // instead of "$1$". The algorithms are otherwise identical.
 package apr1_crypt
 
-import (
-	"github.com/kless/crypt"
-	"github.com/kless/crypt/md5_crypt"
-)
+import "github.com/kless/crypt/md5_crypt"
 
 var Salt = md5_crypt.Salt
 
@@ -31,13 +28,8 @@ func Generate(key, salt []byte) (string, error) { return md5_crypt.Generate(key,
 // string.
 // Returns nil on success, or an error on failure; if the hashed key is diffrent,
 // the error is "crypt.ErrKeyMismatch".
-func Verify(hash string, key []byte) error {
-	newHash, err := Generate(key, []byte(hash))
-	if err != nil {
-		return err
-	}
-	if newHash != hash {
-		return crypt.ErrKeyMismatch
-	}
-	return nil
-}
+func Verify(hashedKey string, key []byte) error { return md5_crypt.Verify(hashedKey, key) }
+
+// Cost returns the hashing cost (in rounds) used to create the given hashed key.
+// Uses a fixed value of rounds, just like MD5-crypt algorithm.
+func Cost(hashedKey string) (int, error) { return md5_crypt.Rounds, nil }

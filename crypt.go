@@ -17,5 +17,12 @@ type Crypter interface {
 	// Verify compares a hashed key with its possible plaintext equivalent.
 	// Returns nil on success, or an error on failure; if the hashed key is
 	// diffrent, the error is "ErrKeyMismatch".
-	Verify(hash string, key []byte) error
+	Verify(hashedKey string, key []byte) error
+
+	// Cost returns the hashing cost (in rounds) used to create the given hashed
+	// key.
+	// When, in the future, the hashing cost of a key needs to be increased in
+	// order to adjust for greater computational power, this function allows one
+	// to establish which keys need to be updated.
+	Cost(hashedKey string) (int, error)
 }

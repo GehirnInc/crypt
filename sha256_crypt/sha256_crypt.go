@@ -46,7 +46,6 @@ func Generate(key, salt []byte) (string, error) {
 	}
 
 	saltToks := bytes.Split(salt, []byte{'$'})
-
 	if len(saltToks) < 3 {
 		return "", common.ErrSaltFormat
 	}
@@ -207,13 +206,28 @@ func Generate(key, salt []byte) (string, error) {
 // string.
 // Returns nil on success, or an error on failure; if the hashed key is diffrent,
 // the error is "crypt.ErrKeyMismatch".
-func Verify(hash string, key []byte) error {
-	newHash, err := Generate(key, []byte(hash))
+func Verify(hashedKey string, key []byte) error {
+	newHash, err := Generate(key, []byte(hashedKey))
 	if err != nil {
 		return err
 	}
-	if newHash != hash {
+	if newHash != hashedKey {
 		return crypt.ErrKeyMismatch
 	}
 	return nil
+}
+
+// Cost returns the hashing cost (in rounds) used to create the given hashed key.
+func Cost(hashedKey string) (int, error) {
+	saltToks := bytes.Split([]byte(hashedKey), []byte{'$'})
+	if len(saltToks) < 3 {
+		return 0, common.ErrSaltFormat
+	}
+
+	if !bytes.HasPrefix(saltToks[2], _rounds) {
+		return Salt.RoundsDefault, nil
+	}
+	roundToks := bytes.Split(saltToks[2], []byte{'='})
+	cost, err := strconv.ParseInt(string(roundToks[1]), 10, 0)
+	return int(cost), err
 }
