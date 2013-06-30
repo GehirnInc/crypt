@@ -70,7 +70,7 @@ func TestVerify(t *testing.T) {
 	}
 	for i, d := range data {
 		hash, _ := Generate(d, nil)
-		if !Verify(d, hash) {
+		if err := Verify(hash, d); err != nil {
 			t.Errorf("Test %d failed: %s", i, d)
 		}
 	}
