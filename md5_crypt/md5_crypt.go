@@ -130,11 +130,6 @@ func Generate(key, salt []byte) (string, error) {
 		Csum[11],
 	})...)
 
-	// Clean sensitive data.
-	for i = 0; i < len(Csum); i++ {
-		Csum[i] = 0
-	}
-
 	return string(out), nil
 }
 

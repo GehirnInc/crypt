@@ -171,6 +171,13 @@ func Generate(key, salt []byte) (string, error) {
 		Csum = C.Sum(nil)
 	}
 
+	// Clean sensitive data.
+	go func() {
+		for i = 0; i < len(Pseq); i++ {
+			Pseq[i] = 0
+		}
+	}()
+
 	out := make([]byte, 0, 123)
 	out = append(out, Salt.MagicPrefix...)
 	if isRoundsDef {
@@ -202,14 +209,6 @@ func Generate(key, salt []byte) (string, error) {
 		Csum[41], Csum[20], Csum[62],
 		Csum[63],
 	})...)
-
-	// Clean sensitive data.
-	for i = 0; i < len(Pseq); i++ {
-		Pseq[i] = 0
-	}
-	for i = 0; i < len(Csum); i++ {
-		Csum[i] = 0
-	}
 
 	return string(out), nil
 }
