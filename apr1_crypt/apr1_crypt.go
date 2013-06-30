@@ -22,6 +22,8 @@ func init() {
 //
 // If the salt is empty, a randomly-generated salt will be generated of length
 // SaltLenMax.
+//
+// Any error only can be got when the salt argument is not empty.
 func Generate(key, salt []byte) (string, error) { return md5_crypt.Generate(key, salt) }
 
 // Verify compares a key using the same salt parameter as the given in the hash

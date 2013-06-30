@@ -29,6 +29,8 @@ var Salt = &common.Salt{
 //
 // If the salt is empty, a randomly-generated salt will be generated of length
 // SaltLenMax.
+//
+// Any error only can be got when the salt argument is not empty.
 func Generate(key, salt []byte) (string, error) {
 	if len(salt) == 0 {
 		salt = Salt.Generate(Salt.SaltLenMax)

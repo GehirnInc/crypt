@@ -34,6 +34,8 @@ var _rounds = []byte("rounds=")
 //
 // If the salt is empty, a randomly-generated salt will be generated with a
 // length of SaltLenMax and RoundsDefault number of rounds.
+//
+// Any error only can be got when the salt argument is not empty.
 func Generate(key, salt []byte) (string, error) {
 	var rounds int
 	var isRoundsDef bool

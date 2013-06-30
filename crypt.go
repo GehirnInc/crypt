@@ -12,6 +12,8 @@ var ErrKeyMismatch = errors.New("hashed password is not the hash of the given pa
 // Crypter is the common interface implemented by all crypt functions.
 type Crypter interface {
 	// Generate performs the crypt hashing of the key with an optional salt.
+	//
+	// Any error only can be got when the salt argument is not empty.
 	Generate(key, salt []byte) (string, error)
 
 	// Verify compares a hashed key with its possible plaintext equivalent.
