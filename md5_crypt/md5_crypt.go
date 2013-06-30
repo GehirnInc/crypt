@@ -137,14 +137,14 @@ func Generate(key, salt []byte) (string, error) {
 // Verify compares a key using the same salt parameter as the given in the hash
 // string.
 // Returns nil on success, or an error on failure; if the hashed key is diffrent,
-// the error is "crypt.ErrVerification".
+// the error is "crypt.ErrKeyMismatch".
 func Verify(hash string, key []byte) error {
 	newHash, err := Generate(key, []byte(hash))
 	if err != nil {
 		return err
 	}
 	if newHash != hash {
-		return crypt.ErrVerification
+		return crypt.ErrKeyMismatch
 	}
 	return nil
 }

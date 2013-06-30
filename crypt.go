@@ -7,7 +7,7 @@ package crypt
 
 import "errors"
 
-var ErrVerification = errors.New("hashed password is not the hash of the given password")
+var ErrKeyMismatch = errors.New("hashed password is not the hash of the given password")
 
 // Crypter is the common interface implemented by all crypt functions.
 type Crypter interface {
@@ -16,6 +16,6 @@ type Crypter interface {
 
 	// Verify compares a hashed key with its possible plaintext equivalent.
 	// Returns nil on success, or an error on failure; if the hashed key is
-	// diffrent, the error is "ErrVerification".
+	// diffrent, the error is "ErrKeyMismatch".
 	Verify(hash string, key []byte) error
 }
