@@ -27,7 +27,7 @@ type crypter struct{ Salt *common.Salt }
 
 // New returns a new crypt.Crypter computing the MD5-crypt password hashing.
 func New() crypt.Crypter {
-	return crypter{
+	return &crypter{
 		&common.Salt{
 			MagicPrefix:   []byte(MagicPrefix),
 			SaltLenMin:    SaltLenMin,
@@ -37,7 +37,7 @@ func New() crypt.Crypter {
 	}
 }
 
-func (c crypter) Generate(key, salt []byte) (string, error) {
+func (c *crypter) Generate(key, salt []byte) (string, error) {
 	if len(salt) == 0 {
 		salt = c.Salt.Generate(SaltLenMax)
 	}
@@ -143,7 +143,7 @@ func (c crypter) Generate(key, salt []byte) (string, error) {
 	return string(out), nil
 }
 
-func (c crypter) Verify(hashedKey string, key []byte) error {
+func (c *crypter) Verify(hashedKey string, key []byte) error {
 	newHash, err := c.Generate(key, []byte(hashedKey))
 	if err != nil {
 		return err
@@ -154,20 +154,6 @@ func (c crypter) Verify(hashedKey string, key []byte) error {
 	return nil
 }
 
-func (c crypter) Cost(hashedKey string) (int, error) { return RoundsDefault, nil }
+func (c *crypter) Cost(hashedKey string) (int, error) { return RoundsDefault, nil }
 
-func (c crypter) SetSalt(salt *common.Salt) {
-	if salt.MagicPrefix != nil {
-		c.Salt.MagicPrefix = salt.MagicPrefix
-	}
-	if salt.SaltLenMin != 0 {
-		c.Salt.SaltLenMin = salt.SaltLenMin
-	}
-	if salt.SaltLenMax != 0 {
-		c.Salt.SaltLenMax = salt.SaltLenMax
-	}
-	if salt.RoundsDefault != 0 {
-		c.Salt.RoundsDefault = salt.RoundsDefault
-	}
-	//c.Salt = salt
-}
+func (c *crypter) SetSalt(salt *common.Salt) { c.Salt = salt }

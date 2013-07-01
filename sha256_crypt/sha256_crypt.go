@@ -33,7 +33,7 @@ type crypter struct{ Salt *common.Salt }
 
 // New returns a new crypt.Crypter computing the SHA256-crypt password hashing.
 func New() crypt.Crypter {
-	return crypter{
+	return &crypter{
 		&common.Salt{
 			MagicPrefix:   []byte(MagicPrefix),
 			SaltLenMin:    SaltLenMin,
@@ -45,7 +45,7 @@ func New() crypt.Crypter {
 	}
 }
 
-func (c crypter) Generate(key, salt []byte) (string, error) {
+func (c *crypter) Generate(key, salt []byte) (string, error) {
 	var rounds int
 	var isRoundsDef bool
 
@@ -213,7 +213,7 @@ func (c crypter) Generate(key, salt []byte) (string, error) {
 	return string(out), nil
 }
 
-func (c crypter) Verify(hashedKey string, key []byte) error {
+func (c *crypter) Verify(hashedKey string, key []byte) error {
 	newHash, err := c.Generate(key, []byte(hashedKey))
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (c crypter) Verify(hashedKey string, key []byte) error {
 	return nil
 }
 
-func (c crypter) Cost(hashedKey string) (int, error) {
+func (c *crypter) Cost(hashedKey string) (int, error) {
 	saltToks := bytes.Split([]byte(hashedKey), []byte{'$'})
 	if len(saltToks) < 3 {
 		return 0, common.ErrSaltFormat
@@ -238,4 +238,4 @@ func (c crypter) Cost(hashedKey string) (int, error) {
 	return int(cost), err
 }
 
-func (c crypter) SetSalt(salt *common.Salt) {}
+func (c *crypter) SetSalt(salt *common.Salt) { c.Salt = salt }
