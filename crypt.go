@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
-// Package crypt provides interfaces for password hash functions.
+// Package crypt provides interface for password hash functions.
 package crypt
 
 import (
@@ -11,7 +11,7 @@ import (
 	"github.com/kless/crypt/common"
 )
 
-var ErrKeyMismatch = errors.New("hashed password is not the hash of the given password")
+var ErrKeyMismatch = errors.New("hashed value is not the hash of the given password")
 
 // Crypter is the common interface implemented by all crypt functions.
 type Crypter interface {
