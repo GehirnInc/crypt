@@ -25,7 +25,7 @@ const (
 var md5Crypt = md5_crypt.New()
 
 func init() {
-	md5Crypt.SetSalt(&common.Salt{
+	md5Crypt.SetSalt(common.Salt{
 		MagicPrefix:   []byte(MagicPrefix),
 		SaltLenMin:    SaltLenMin,
 		SaltLenMax:    SaltLenMax,
@@ -33,10 +33,10 @@ func init() {
 	})
 }
 
-type crypter struct{ Salt *common.Salt }
+type crypter struct{ Salt common.Salt }
 
 // New returns a new crypt.Crypter computing the variant "apr1" of MD5-crypt
-func New() crypt.Crypter { return &crypter{nil} }
+func New() crypt.Crypter { return &crypter{common.Salt{}} }
 
 func (c *crypter) Generate(key, salt []byte) (string, error) {
 	return md5Crypt.Generate(key, salt)
@@ -48,4 +48,4 @@ func (c *crypter) Verify(hashedKey string, key []byte) error {
 
 func (c *crypter) Cost(hashedKey string) (int, error) { return RoundsDefault, nil }
 
-func (c *crypter) SetSalt(salt *common.Salt) {}
+func (c *crypter) SetSalt(salt common.Salt) {}

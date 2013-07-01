@@ -41,5 +41,5 @@ type Crypter interface {
 
 	// SetSalt sets a different salt. It is used to easily create derivated
 	// algorithms, i.e. "apr1_crypt" from "md5_crypt".
-	SetSalt(salt *common.Salt)
+	SetSalt(salt common.Salt)
 }

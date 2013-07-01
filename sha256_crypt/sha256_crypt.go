@@ -29,12 +29,12 @@ const (
 
 var _rounds = []byte("rounds=")
 
-type crypter struct{ Salt *common.Salt }
+type crypter struct{ Salt common.Salt }
 
 // New returns a new crypt.Crypter computing the SHA256-crypt password hashing.
 func New() crypt.Crypter {
 	return &crypter{
-		&common.Salt{
+		common.Salt{
 			MagicPrefix:   []byte(MagicPrefix),
 			SaltLenMin:    SaltLenMin,
 			SaltLenMax:    SaltLenMax,
@@ -238,4 +238,4 @@ func (c *crypter) Cost(hashedKey string) (int, error) {
 	return int(cost), err
 }
 
-func (c *crypter) SetSalt(salt *common.Salt) { c.Salt = salt }
+func (c *crypter) SetSalt(salt common.Salt) { c.Salt = salt }

@@ -23,12 +23,12 @@ const (
 	RoundsDefault = 1000
 )
 
-type crypter struct{ Salt *common.Salt }
+type crypter struct{ Salt common.Salt }
 
 // New returns a new crypt.Crypter computing the MD5-crypt password hashing.
 func New() crypt.Crypter {
 	return &crypter{
-		&common.Salt{
+		common.Salt{
 			MagicPrefix:   []byte(MagicPrefix),
 			SaltLenMin:    SaltLenMin,
 			SaltLenMax:    SaltLenMax,
@@ -156,4 +156,4 @@ func (c *crypter) Verify(hashedKey string, key []byte) error {
 
 func (c *crypter) Cost(hashedKey string) (int, error) { return RoundsDefault, nil }
 
-func (c *crypter) SetSalt(salt *common.Salt) { c.Salt = salt }
+func (c *crypter) SetSalt(salt common.Salt) { c.Salt = salt }
