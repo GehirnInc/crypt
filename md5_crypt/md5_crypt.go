@@ -14,28 +14,34 @@ import (
 	"github.com/kless/crypt/common"
 )
 
-const Rounds = 1000
-
 // NOTE: Cisco IOS only allows salts of length 4.
 
-var Salt = &common.Salt{
-	MagicPrefix: []byte("$1$"),
-	SaltLenMin:  1, // Real minimum is 0, but that isn't useful.
-	SaltLenMax:  8,
+const (
+	MagicPrefix   = "$1$"
+	SaltLenMin    = 1 // Real minimum is 0, but that isn't useful.
+	SaltLenMax    = 8
+	RoundsDefault = 1000
+)
+
+type crypter struct{ Salt *common.Salt }
+
+// New returns a new crypt.Crypter computing the MD5-crypt password hashing.
+func New() crypt.Crypter {
+	return crypter{
+		&common.Salt{
+			MagicPrefix:   []byte(MagicPrefix),
+			SaltLenMin:    SaltLenMin,
+			SaltLenMax:    SaltLenMax,
+			RoundsDefault: RoundsDefault,
+		},
+	}
 }
 
-// Generate performs the MD5-crypt hashing algorithm, returning a full hash
-// suitable for storage and later password verification.
-//
-// If the salt is empty, a randomly-generated salt will be generated of length
-// SaltLenMax.
-//
-// Any error only can be got when the salt argument is not empty.
-func Generate(key, salt []byte) (string, error) {
+func (c crypter) Generate(key, salt []byte) (string, error) {
 	if len(salt) == 0 {
-		salt = Salt.Generate(Salt.SaltLenMax)
+		salt = c.Salt.Generate(SaltLenMax)
 	}
-	if !bytes.HasPrefix(salt, Salt.MagicPrefix) {
+	if !bytes.HasPrefix(salt, c.Salt.MagicPrefix) {
 		return "", common.ErrSaltPrefix
 	}
 
@@ -59,7 +65,7 @@ func Generate(key, salt []byte) (string, error) {
 
 	A := md5.New()
 	A.Write(key)
-	A.Write(Salt.MagicPrefix)
+	A.Write(c.Salt.MagicPrefix)
 	A.Write(salt)
 	// Add for any character in the key one byte of the alternate sum.
 	i := len(key)
@@ -94,7 +100,7 @@ func Generate(key, salt []byte) (string, error) {
 	// In fear of password crackers here comes a quite long loop which just
 	// processes the output of the previous round again.
 	// We cannot ignore this here.
-	for i = 0; i < Rounds; i++ {
+	for i = 0; i < RoundsDefault; i++ {
 		C := md5.New()
 
 		// Add key or last result.
@@ -121,8 +127,8 @@ func Generate(key, salt []byte) (string, error) {
 		Csum = C.Sum(nil)
 	}
 
-	out := make([]byte, 0, 23+len(Salt.MagicPrefix)+len(salt))
-	out = append(out, Salt.MagicPrefix...)
+	out := make([]byte, 0, 23+len(c.Salt.MagicPrefix)+len(salt))
+	out = append(out, c.Salt.MagicPrefix...)
 	out = append(out, salt...)
 	out = append(out, '$')
 	out = append(out, common.Base64_24Bit([]byte{
@@ -137,12 +143,8 @@ func Generate(key, salt []byte) (string, error) {
 	return string(out), nil
 }
 
-// Verify compares a key using the same salt parameter as the given in the hash
-// string.
-// Returns nil on success, or an error on failure; if the hashed key is diffrent,
-// the error is "crypt.ErrKeyMismatch".
-func Verify(hashedKey string, key []byte) error {
-	newHash, err := Generate(key, []byte(hashedKey))
+func (c crypter) Verify(hashedKey string, key []byte) error {
+	newHash, err := c.Generate(key, []byte(hashedKey))
 	if err != nil {
 		return err
 	}
@@ -152,6 +154,20 @@ func Verify(hashedKey string, key []byte) error {
 	return nil
 }
 
-// Cost returns the hashing cost (in rounds) used to create the given hashed key.
-// The MD5-crypt algorithm uses a fixed value of rounds.
-func Cost(hashedKey string) (int, error) { return Rounds, nil }
+func (c crypter) Cost(hashedKey string) (int, error) { return RoundsDefault, nil }
+
+func (c crypter) SetSalt(salt *common.Salt) {
+	if salt.MagicPrefix != nil {
+		c.Salt.MagicPrefix = salt.MagicPrefix
+	}
+	if salt.SaltLenMin != 0 {
+		c.Salt.SaltLenMin = salt.SaltLenMin
+	}
+	if salt.SaltLenMax != 0 {
+		c.Salt.SaltLenMax = salt.SaltLenMax
+	}
+	if salt.RoundsDefault != 0 {
+		c.Salt.RoundsDefault = salt.RoundsDefault
+	}
+	//c.Salt = salt
+}

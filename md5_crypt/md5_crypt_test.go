@@ -6,6 +6,8 @@ package md5_crypt
 
 import "testing"
 
+var md5Crypt = New()
+
 func TestGenerate(t *testing.T) {
 	data := []struct {
 		salt []byte
@@ -52,9 +54,12 @@ func TestGenerate(t *testing.T) {
 	}
 
 	for i, d := range data {
-		hash, _ := Generate(d.key, d.salt)
+		hash, err := md5Crypt.Generate(d.key, d.salt)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if hash != d.out {
-			t.Errorf("Test %d failed\nExpected: %s\n     Got: %s", i, d.out, hash)
+			t.Errorf("Test %d failed\nExpected: %s, got: %s", i, d.out, hash)
 		}
 	}
 }
@@ -69,8 +74,11 @@ func TestVerify(t *testing.T) {
 		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
-		hash, _ := Generate(d, nil)
-		if err := Verify(hash, d); err != nil {
+		hash, err := md5Crypt.Generate(d, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = md5Crypt.Verify(hash, d); err != nil {
 			t.Errorf("Test %d failed: %s", i, d)
 		}
 	}

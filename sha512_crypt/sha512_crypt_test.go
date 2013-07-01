@@ -6,6 +6,8 @@ package sha512_crypt
 
 import "testing"
 
+var sha512Crypt = New()
+
 func TestGenerate(t *testing.T) {
 	data := []struct {
 		salt []byte
@@ -18,7 +20,7 @@ func TestGenerate(t *testing.T) {
 			[]byte("Hello world!"),
 			"$6$saltstring$svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3uBnIFNjn" +
 				"QJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1",
-			Salt.RoundsDefault,
+			RoundsDefault,
 		},
 		{
 			[]byte("$6$rounds=10000$saltstringsaltstring"),
@@ -67,7 +69,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	for i, d := range data {
-		hash, err := Generate(d.key, d.salt)
+		hash, err := sha512Crypt.Generate(d.key, d.salt)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +77,7 @@ func TestGenerate(t *testing.T) {
 			t.Errorf("Test %d failed\nExpected: %s, got: %s", i, d.out, hash)
 		}
 
-		cost, err := Cost(hash)
+		cost, err := sha512Crypt.Cost(hash)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,11 +97,11 @@ func TestVerify(t *testing.T) {
 		[]byte("94ajflkvjzpe8u3&*j1k513KLJ&*()"),
 	}
 	for i, d := range data {
-		hash, err := Generate(d, nil)
+		hash, err := sha512Crypt.Generate(d, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Verify(hash, d); err != nil {
+		if err = sha512Crypt.Verify(hash, d); err != nil {
 			t.Errorf("Test %d failed: %s", i, d)
 		}
 	}

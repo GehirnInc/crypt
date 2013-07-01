@@ -28,7 +28,7 @@ type Salt struct {
 	MagicPrefix []byte
 }
 
-// GenerateSalt generates a random salt of a given length.
+// Generate generates a random salt of a given length.
 //
 // The length is set thus:
 //

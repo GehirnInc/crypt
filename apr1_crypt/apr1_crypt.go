@@ -9,29 +9,40 @@
 // instead of "$1$". The algorithms are otherwise identical.
 package apr1_crypt
 
-import "github.com/kless/crypt/md5_crypt"
+import (
+	"github.com/kless/crypt"
+	"github.com/kless/crypt/common"
+	"github.com/kless/crypt/md5_crypt"
+)
 
-var Salt = md5_crypt.Salt
+const (
+	MagicPrefix   = "$apr1$"
+	SaltLenMin    = 1
+	SaltLenMax    = 8
+	RoundsDefault = 1000
+)
+
+var md5Crypt = md5_crypt.New()
 
 func init() {
-	Salt.MagicPrefix = []byte("$apr1$")
+	md5Crypt.SetSalt(&common.Salt{
+		MagicPrefix: []byte(MagicPrefix),
+	})
 }
 
-// Generate performs the MD5-crypt hashing algorithm, returning a full hash
-// string suitable for storage and later password verification.
-//
-// If the salt is empty, a randomly-generated salt will be generated of length
-// SaltLenMax.
-//
-// Any error only can be got when the salt argument is not empty.
-func Generate(key, salt []byte) (string, error) { return md5_crypt.Generate(key, salt) }
+type crypter struct{ Salt *common.Salt }
 
-// Verify compares a key using the same salt parameter as the given in the hash
-// string.
-// Returns nil on success, or an error on failure; if the hashed key is diffrent,
-// the error is "crypt.ErrKeyMismatch".
-func Verify(hashedKey string, key []byte) error { return md5_crypt.Verify(hashedKey, key) }
+// New returns a new crypt.Crypter computing the variant "apr1" of MD5-crypt
+func New() crypt.Crypter { return crypter{nil} }
 
-// Cost returns the hashing cost (in rounds) used to create the given hashed key.
-// Uses a fixed value of rounds, just like MD5-crypt algorithm.
-func Cost(hashedKey string) (int, error) { return md5_crypt.Rounds, nil }
+func (c crypter) Generate(key, salt []byte) (string, error) {
+	return md5Crypt.Generate(key, salt)
+}
+
+func (c crypter) Verify(hashedKey string, key []byte) error {
+	return md5Crypt.Verify(hashedKey, key)
+}
+
+func (c crypter) Cost(hashedKey string) (int, error) { return RoundsDefault, nil }
+
+func (c crypter) SetSalt(salt *common.Salt) {}

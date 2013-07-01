@@ -18,32 +18,41 @@ import (
 	"github.com/kless/crypt/common"
 )
 
-var Salt = &common.Salt{
-	MagicPrefix:   []byte("$5$"),
-	SaltLenMin:    1,
-	SaltLenMax:    16,
-	RoundsMin:     1000,
-	RoundsMax:     999999999,
-	RoundsDefault: 5000,
-}
+const (
+	MagicPrefix   = "$5$"
+	SaltLenMin    = 1
+	SaltLenMax    = 16
+	RoundsMin     = 1000
+	RoundsMax     = 999999999
+	RoundsDefault = 5000
+)
 
 var _rounds = []byte("rounds=")
 
-// Generate performs the SHA256-crypt hashing algorithm, returning a full hash
-// suitable for storage and later password verification.
-//
-// If the salt is empty, a randomly-generated salt will be generated with a
-// length of SaltLenMax and RoundsDefault number of rounds.
-//
-// Any error only can be got when the salt argument is not empty.
-func Generate(key, salt []byte) (string, error) {
+type crypter struct{ Salt *common.Salt }
+
+// New returns a new crypt.Crypter computing the SHA256-crypt password hashing.
+func New() crypt.Crypter {
+	return crypter{
+		&common.Salt{
+			MagicPrefix:   []byte(MagicPrefix),
+			SaltLenMin:    SaltLenMin,
+			SaltLenMax:    SaltLenMax,
+			RoundsDefault: RoundsDefault,
+			RoundsMin:     RoundsMin,
+			RoundsMax:     RoundsMax,
+		},
+	}
+}
+
+func (c crypter) Generate(key, salt []byte) (string, error) {
 	var rounds int
 	var isRoundsDef bool
 
 	if len(salt) == 0 {
-		salt = Salt.GenerateWRounds(Salt.SaltLenMax, Salt.RoundsDefault)
+		salt = c.Salt.GenerateWRounds(SaltLenMax, RoundsDefault)
 	}
-	if !bytes.HasPrefix(salt, Salt.MagicPrefix) {
+	if !bytes.HasPrefix(salt, c.Salt.MagicPrefix) {
 		return "", common.ErrSaltPrefix
 	}
 
@@ -59,14 +68,14 @@ func Generate(key, salt []byte) (string, error) {
 			return "", common.ErrSaltRounds
 		}
 		rounds = int(pr)
-		if rounds < Salt.RoundsMin {
-			rounds = Salt.RoundsMin
-		} else if rounds > Salt.RoundsMax {
-			rounds = Salt.RoundsMax
+		if rounds < RoundsMin {
+			rounds = RoundsMin
+		} else if rounds > RoundsMax {
+			rounds = RoundsMax
 		}
 		salt = saltToks[3]
 	} else {
-		rounds = Salt.RoundsDefault
+		rounds = RoundsDefault
 		salt = saltToks[2]
 	}
 
@@ -181,7 +190,7 @@ func Generate(key, salt []byte) (string, error) {
 	}()
 
 	out := make([]byte, 0, 80)
-	out = append(out, Salt.MagicPrefix...)
+	out = append(out, c.Salt.MagicPrefix...)
 	if isRoundsDef {
 		out = append(out, []byte("rounds="+strconv.Itoa(rounds)+"$")...)
 	}
@@ -204,12 +213,8 @@ func Generate(key, salt []byte) (string, error) {
 	return string(out), nil
 }
 
-// Verify compares a key using the same salt parameter as the given in the hash
-// string.
-// Returns nil on success, or an error on failure; if the hashed key is diffrent,
-// the error is "crypt.ErrKeyMismatch".
-func Verify(hashedKey string, key []byte) error {
-	newHash, err := Generate(key, []byte(hashedKey))
+func (c crypter) Verify(hashedKey string, key []byte) error {
+	newHash, err := c.Generate(key, []byte(hashedKey))
 	if err != nil {
 		return err
 	}
@@ -219,17 +224,18 @@ func Verify(hashedKey string, key []byte) error {
 	return nil
 }
 
-// Cost returns the hashing cost (in rounds) used to create the given hashed key.
-func Cost(hashedKey string) (int, error) {
+func (c crypter) Cost(hashedKey string) (int, error) {
 	saltToks := bytes.Split([]byte(hashedKey), []byte{'$'})
 	if len(saltToks) < 3 {
 		return 0, common.ErrSaltFormat
 	}
 
 	if !bytes.HasPrefix(saltToks[2], _rounds) {
-		return Salt.RoundsDefault, nil
+		return RoundsDefault, nil
 	}
 	roundToks := bytes.Split(saltToks[2], []byte{'='})
 	cost, err := strconv.ParseInt(string(roundToks[1]), 10, 0)
 	return int(cost), err
 }
+
+func (c crypter) SetSalt(salt *common.Salt) {}
