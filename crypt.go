@@ -87,8 +87,11 @@ func New(hashedKey string) Crypter {
 	} else {
 		toks := strings.SplitN(hashedKey, "$", 3)
 		prefix := "$" + toks[1] + "$"
-		panic("crypt: requested cryp function is unavailable: " + prefix)
+		panic("crypt: unknown cryp function from prefix: " + prefix)
 	}
 
-	return f()
+	if f != nil {
+		return f()
+	}
+	panic("crypt: requested cryp function is unavailable")
 }
