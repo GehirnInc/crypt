@@ -18,6 +18,10 @@ import (
 	"github.com/kless/crypt/common"
 )
 
+func init() {
+	crypt.RegisterCrypt(crypt.SHA512, New, MagicPrefix)
+}
+
 const (
 	MagicPrefix   = "$6$"
 	SaltLenMin    = 1

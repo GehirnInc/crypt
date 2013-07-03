@@ -15,6 +15,10 @@ import (
 	"github.com/kless/crypt/md5_crypt"
 )
 
+func init() {
+	crypt.RegisterCrypt(crypt.APR1, New, MagicPrefix)
+}
+
 const (
 	MagicPrefix   = "$apr1$"
 	SaltLenMin    = 1

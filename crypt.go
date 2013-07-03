@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
-// Package crypt provides interface for password hash functions.
+// Package crypt provides interface for password hash functions and collects
+// common constants.
 package crypt
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/kless/crypt/common"
 )
@@ -42,4 +44,51 @@ type Crypter interface {
 	// SetSalt sets a different salt. It is used to easily create derivated
 	// algorithms, i.e. "apr1_crypt" from "md5_crypt".
 	SetSalt(salt common.Salt)
+}
+
+// Crypt identifies a crypt function that is implemented in another package.
+type Crypt uint
+
+const (
+	APR1   Crypt = 1 + iota // import github.com/kless/crypt/apr1_crypt
+	MD5                     // import github.com/kless/crypt/md5_crypt
+	SHA256                  // import github.com/kless/crypt/sha256_crypt
+	SHA512                  // import github.com/kless/crypt/sha512_crypt
+	maxCrypt
+)
+
+var cryptPrefixes = make([]string, maxCrypt)
+
+var crypts = make([]func() Crypter, maxCrypt)
+
+// RegisterCrypt registers a function that returns a new instance of the given
+// crypt function. This is intended to be called from the init function in
+// packages that implement crypt functions.
+func RegisterCrypt(c Crypt, f func() Crypter, prefix string) {
+	if c >= maxCrypt {
+		panic("crypt: RegisterHash of unknown crypt function")
+	}
+	crypts[c] = f
+	cryptPrefixes[c] = prefix
+}
+
+// New returns a new Crypter using the prefix in the given hashed key.
+func New(hashedKey string) Crypter {
+	var f func() Crypter
+
+	if strings.HasPrefix(hashedKey, cryptPrefixes[SHA512]) {
+		f = crypts[SHA512]
+	} else if strings.HasPrefix(hashedKey, cryptPrefixes[SHA256]) {
+		f = crypts[SHA256]
+	} else if strings.HasPrefix(hashedKey, cryptPrefixes[MD5]) {
+		f = crypts[MD5]
+	} else if strings.HasPrefix(hashedKey, cryptPrefixes[APR1]) {
+		f = crypts[APR1]
+	} else {
+		toks := strings.SplitN(hashedKey, "$", 3)
+		prefix := "$" + toks[1] + "$"
+		panic("crypt: requested cryp function is unavailable: " + prefix)
+	}
+
+	return f()
 }

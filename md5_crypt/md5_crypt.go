@@ -14,6 +14,10 @@ import (
 	"github.com/kless/crypt/common"
 )
 
+func init() {
+	crypt.RegisterCrypt(crypt.MD5, New, MagicPrefix)
+}
+
 // NOTE: Cisco IOS only allows salts of length 4.
 
 const (
