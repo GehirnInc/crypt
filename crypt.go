@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
-// Package crypt provides interface for password hash functions and collects
+// Package crypt provides interface for password crypt functions and collects
 // common constants.
 package crypt
 
@@ -72,8 +72,17 @@ func RegisterCrypt(c Crypt, f func() Crypter, prefix string) {
 	cryptPrefixes[c] = prefix
 }
 
-// New returns a new Crypter using the prefix in the given hashed key.
-func New(hashedKey string) Crypter {
+// New returns a new crypter.
+func New(c Crypt) Crypter {
+	f := crypts[c]
+	if f != nil {
+		return f()
+	}
+	panic("crypt: requested cryp function is unavailable")
+}
+
+// NewFromHash returns a new Crypter using the prefix in the given hashed key.
+func NewFromHash(hashedKey string) Crypter {
 	var f func() Crypter
 
 	if strings.HasPrefix(hashedKey, cryptPrefixes[SHA512]) {
