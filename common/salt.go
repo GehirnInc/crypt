@@ -18,14 +18,14 @@ var (
 
 // Salt represents a salt.
 type Salt struct {
+	MagicPrefix []byte
+
 	SaltLenMin int
 	SaltLenMax int
 
 	RoundsMin     int
 	RoundsMax     int
 	RoundsDefault int
-
-	MagicPrefix []byte
 }
 
 // Generate generates a random salt of a given length.
