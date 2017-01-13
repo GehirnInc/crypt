@@ -12,6 +12,6 @@ to ensure compatibility with them.
 
 To install crypt, use the `go get` command.
 
-    go get github.com/kless/crypt
+    go get github.com/GehirnInc/crypt
 
 I hope you find this library to be useful and easy to use!

@@ -10,7 +10,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/kless/crypt/common"
+	"github.com/GehirnInc/crypt/common"
 )
 
 var ErrKeyMismatch = errors.New("hashed value is not the hash of the given password")
@@ -50,10 +50,10 @@ type Crypter interface {
 type Crypt uint
 
 const (
-	APR1   Crypt = 1 + iota // import github.com/kless/crypt/apr1_crypt
-	MD5                     // import github.com/kless/crypt/md5_crypt
-	SHA256                  // import github.com/kless/crypt/sha256_crypt
-	SHA512                  // import github.com/kless/crypt/sha512_crypt
+	APR1   Crypt = 1 + iota // import github.com/GehirnInc/crypt/apr1_crypt
+	MD5                     // import github.com/GehirnInc/crypt/md5_crypt
+	SHA256                  // import github.com/GehirnInc/crypt/sha256_crypt
+	SHA512                  // import github.com/GehirnInc/crypt/sha512_crypt
 	maxCrypt
 )
 
