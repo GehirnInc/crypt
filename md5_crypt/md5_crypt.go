@@ -7,10 +7,12 @@
 package md5_crypt
 
 import (
+	"bytes"
 	"crypto/md5"
 
 	"github.com/GehirnInc/crypt"
 	"github.com/GehirnInc/crypt/common"
+	"github.com/GehirnInc/crypt/internal"
 )
 
 func init() {
@@ -49,91 +51,79 @@ func (c *crypter) Generate(key, salt []byte) (result string, err error) {
 		return
 	}
 
-	// Compute alternate MD5 sum with input KEY, SALT, and KEY.
-	Alternate := md5.New()
-	Alternate.Write(key)
-	Alternate.Write(salt)
-	Alternate.Write(key)
-	AlternateSum := Alternate.Sum(nil) // 16 bytes
+	keyLen := len(key)
+	h := md5.New()
 
-	A := md5.New()
-	A.Write(key)
-	A.Write(c.Salt.MagicPrefix)
-	A.Write(salt)
-	// Add for any character in the key one byte of the alternate sum.
-	i := len(key)
-	for ; i > 16; i -= 16 {
-		A.Write(AlternateSum)
-	}
-	A.Write(AlternateSum[0:i])
+	// Compute sumB
+	h.Write(key)
+	h.Write(salt)
+	h.Write(key)
+	sumB := h.Sum(nil)
 
+	// Compute sumA
+	h.Reset()
+	h.Write(key)
+	h.Write(c.Salt.MagicPrefix)
+	h.Write(salt)
+	h.Write(internal.RepeatByteSequence(sumB, keyLen))
 	// The original implementation now does something weird:
 	//   For every 1 bit in the key, the first 0 is added to the buffer
 	//   For every 0 bit, the first character of the key
 	// This does not seem to be what was intended but we have to follow this to
 	// be compatible.
-	for i = len(key); i > 0; i >>= 1 {
-		if (i & 1) == 0 {
-			A.Write(key[0:1])
+	for i := keyLen; i > 0; i >>= 1 {
+		if i%2 == 0 {
+			h.Write(key[0:1])
 		} else {
-			A.Write([]byte{0})
+			h.Write([]byte{0})
 		}
 	}
-	Csum := A.Sum(nil)
-
-	// Clean sensitive data.
-	go func() {
-		A.Reset()
-		Alternate.Reset()
-		for i = 0; i < len(AlternateSum); i++ {
-			AlternateSum[i] = 0
-		}
-	}()
+	sumA := h.Sum(nil)
+	internal.CleanSensitiveData(sumB)
 
 	// In fear of password crackers here comes a quite long loop which just
 	// processes the output of the previous round again.
 	// We cannot ignore this here.
-	for i = 0; i < RoundsDefault; i++ {
-		C := md5.New()
+	for i := 0; i < RoundsDefault; i++ {
+		h.Reset()
 
 		// Add key or last result.
-		if (i & 1) != 0 {
-			C.Write(key)
+		if i%2 != 0 {
+			h.Write(key)
 		} else {
-			C.Write(Csum)
+			h.Write(sumA)
 		}
 		// Add salt for numbers not divisible by 3.
-		if (i % 3) != 0 {
-			C.Write(salt)
+		if i%3 != 0 {
+			h.Write(salt)
 		}
 		// Add key for numbers not divisible by 7.
-		if (i % 7) != 0 {
-			C.Write(key)
+		if i%7 != 0 {
+			h.Write(key)
 		}
 		// Add key or last result.
-		if (i & 1) == 0 {
-			C.Write(key)
+		if i&1 != 0 {
+			h.Write(sumA)
 		} else {
-			C.Write(Csum)
+			h.Write(key)
 		}
-
-		Csum = C.Sum(nil)
+		copy(sumA, h.Sum(nil))
 	}
 
-	out := make([]byte, 0, 23+len(c.Salt.MagicPrefix)+len(salt))
-	out = append(out, c.Salt.MagicPrefix...)
-	out = append(out, salt...)
-	out = append(out, '$')
-	out = append(out, common.Base64_24Bit([]byte{
-		Csum[12], Csum[6], Csum[0],
-		Csum[13], Csum[7], Csum[1],
-		Csum[14], Csum[8], Csum[2],
-		Csum[15], Csum[9], Csum[3],
-		Csum[5], Csum[10], Csum[4],
-		Csum[11],
-	})...)
-
-	return string(out), nil
+	buf := bytes.Buffer{}
+	buf.Grow(len(c.Salt.MagicPrefix) + len(salt) + 1 + 22)
+	buf.Write(c.Salt.MagicPrefix)
+	buf.Write(salt)
+	buf.WriteByte('$')
+	buf.Write(common.Base64_24Bit([]byte{
+		sumA[12], sumA[6], sumA[0],
+		sumA[13], sumA[7], sumA[1],
+		sumA[14], sumA[8], sumA[2],
+		sumA[15], sumA[9], sumA[3],
+		sumA[5], sumA[10], sumA[4],
+		sumA[11],
+	}))
+	return buf.String(), nil
 }
 
 func (c *crypter) Verify(hashedKey string, key []byte) error {

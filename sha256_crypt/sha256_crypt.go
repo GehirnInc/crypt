@@ -10,11 +10,13 @@
 package sha256_crypt
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"strconv"
 
 	"github.com/GehirnInc/crypt"
 	"github.com/GehirnInc/crypt/common"
+	"github.com/GehirnInc/crypt/internal"
 )
 
 func init() {
@@ -57,139 +59,95 @@ func (c *crypter) Generate(key, salt []byte) (string, error) {
 		return "", err
 	}
 
+	keyLen := len(key)
+	saltLen := len(salt)
+	h := sha256.New()
 
-	if len(salt) > 16 {
-		salt = salt[0:16]
-	}
+	// Compute sumB, step 4-8
+	h.Write(key)
+	h.Write(salt)
+	h.Write(key)
+	sumB := h.Sum(nil)
 
-	// Compute alternate SHA256 sum with input KEY, SALT, and KEY.
-	Alternate := sha256.New()
-	Alternate.Write(key)
-	Alternate.Write(salt)
-	Alternate.Write(key)
-	AlternateSum := Alternate.Sum(nil) // 32 bytes
-
-	A := sha256.New()
-	A.Write(key)
-	A.Write(salt)
-	// Add for any character in the key one byte of the alternate sum.
-	i := len(key)
-	for ; i > 32; i -= 32 {
-		A.Write(AlternateSum)
-	}
-	A.Write(AlternateSum[0:i])
-
-	// Take the binary representation of the length of the key and for every add
-	// the alternate sum, for every 0 the key.
-	for i = len(key); i > 0; i >>= 1 {
-		if (i & 1) != 0 {
-			A.Write(AlternateSum)
+	// Compute sumA, step 1-3, 9-12
+	h.Reset()
+	h.Write(key)
+	h.Write(salt)
+	h.Write(internal.RepeatByteSequence(sumB, keyLen))
+	for i := keyLen; i > 0; i >>= 1 {
+		if i%2 == 0 {
+			h.Write(key)
 		} else {
-			A.Write(key)
+			h.Write(sumB)
 		}
 	}
-	Asum := A.Sum(nil)
+	sumA := h.Sum(nil)
+	internal.CleanSensitiveData(sumB)
 
-	// Start computation of P byte sequence.
-	P := sha256.New()
-	// For every character in the password add the entire password.
-	for i = 0; i < len(key); i++ {
-		P.Write(key)
+	// Compute seqP, step 13-16
+	h.Reset()
+	for i := 0; i < keyLen; i++ {
+		h.Write(key)
 	}
-	Psum := P.Sum(nil)
-	// Create byte sequence P.
-	Pseq := make([]byte, 0, len(key))
-	for i = len(key); i > 32; i -= 32 {
-		Pseq = append(Pseq, Psum...)
+	seqP := internal.RepeatByteSequence(h.Sum(nil), keyLen)
+
+	// Compute seqS, step 17-20
+	h.Reset()
+	for i := 0; i < 16+int(sumA[0]); i++ {
+		h.Write(salt)
 	}
-	Pseq = append(Pseq, Psum[0:i]...)
+	seqS := internal.RepeatByteSequence(h.Sum(nil), saltLen)
 
-	// Start computation of S byte sequence.
-	S := sha256.New()
-	for i = 0; i < (16 + int(Asum[0])); i++ {
-		S.Write(salt)
-	}
-	Ssum := S.Sum(nil)
-	// Create byte sequence S.
-	Sseq := make([]byte, 0, len(salt))
-	for i = len(salt); i > 32; i -= 32 {
-		Sseq = append(Sseq, Ssum...)
-	}
-	Sseq = append(Sseq, Ssum[0:i]...)
+	// step 21
+	for i := 0; i < rounds; i++ {
+		h.Reset()
 
-	Csum := Asum
-
-	// Clean sensitive data.
-	go func() {
-		A.Reset()
-		Alternate.Reset()
-		P.Reset()
-
-		for i = 0; i < len(Asum); i++ {
-			Asum[i] = 0
-		}
-		for i = 0; i < len(AlternateSum); i++ {
-			AlternateSum[i] = 0
-		}
-	}()
-
-	// Repeatedly run the collected hash value through SHA256 to burn CPU cycles.
-	for i = 0; i < rounds; i++ {
-		C := sha256.New()
-
-		// Add key or last result.
-		if (i & 1) != 0 {
-			C.Write(Pseq)
+		if i&1 != 0 {
+			h.Write(seqP)
 		} else {
-			C.Write(Csum)
+			h.Write(sumA)
 		}
-		// Add salt for numbers not divisible by 3.
-		if (i % 3) != 0 {
-			C.Write(Sseq)
+		if i%3 != 0 {
+			h.Write(seqS)
 		}
-		// Add key for numbers not divisible by 7.
-		if (i % 7) != 0 {
-			C.Write(Pseq)
+		if i%7 != 0 {
+			h.Write(seqP)
 		}
-		// Add key or last result.
-		if (i & 1) != 0 {
-			C.Write(Csum)
+		if i&1 != 0 {
+			h.Write(sumA)
 		} else {
-			C.Write(Pseq)
+			h.Write(seqP)
 		}
-
-		Csum = C.Sum(nil)
+		copy(sumA, h.Sum(nil))
 	}
+	internal.CleanSensitiveData(seqP)
+	internal.CleanSensitiveData(seqS)
 
-	// Clean sensitive data.
-	go func() {
-		for i = 0; i < len(Pseq); i++ {
-			Pseq[i] = 0
-		}
-	}()
-
-	out := make([]byte, 0, 80)
-	out = append(out, c.Salt.MagicPrefix...)
+	// make output
+	buf := bytes.Buffer{}
+	buf.Grow(len(c.Salt.MagicPrefix) + len(_rounds) + 9 + 1 + len(salt) + 1 + 43)
+	buf.Write(c.Salt.MagicPrefix)
 	if isRoundsDef {
-		out = append(out, []byte("rounds="+strconv.Itoa(rounds)+"$")...)
+		buf.Write(_rounds)
+		buf.WriteString(strconv.Itoa(rounds))
+		buf.WriteByte('$')
 	}
-	out = append(out, salt...)
-	out = append(out, '$')
-	out = append(out, common.Base64_24Bit([]byte{
-		Csum[20], Csum[10], Csum[0],
-		Csum[11], Csum[1], Csum[21],
-		Csum[2], Csum[22], Csum[12],
-		Csum[23], Csum[13], Csum[3],
-		Csum[14], Csum[4], Csum[24],
-		Csum[5], Csum[25], Csum[15],
-		Csum[26], Csum[16], Csum[6],
-		Csum[17], Csum[7], Csum[27],
-		Csum[8], Csum[28], Csum[18],
-		Csum[29], Csum[19], Csum[9],
-		Csum[30], Csum[31],
-	})...)
-
-	return string(out), nil
+	buf.Write(salt)
+	buf.WriteByte('$')
+	buf.Write(common.Base64_24Bit([]byte{
+		sumA[20], sumA[10], sumA[0],
+		sumA[11], sumA[1], sumA[21],
+		sumA[2], sumA[22], sumA[12],
+		sumA[23], sumA[13], sumA[3],
+		sumA[14], sumA[4], sumA[24],
+		sumA[5], sumA[25], sumA[15],
+		sumA[26], sumA[16], sumA[6],
+		sumA[17], sumA[7], sumA[27],
+		sumA[8], sumA[28], sumA[18],
+		sumA[29], sumA[19], sumA[9],
+		sumA[30], sumA[31],
+	}))
+	return buf.String(), nil
 }
 
 func (c *crypter) Verify(hashedKey string, key []byte) error {
