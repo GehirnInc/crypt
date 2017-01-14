@@ -7,7 +7,6 @@
 package md5_crypt
 
 import (
-	"bytes"
 	"crypto/md5"
 
 	"github.com/GehirnInc/crypt"
@@ -41,23 +40,13 @@ func New() crypt.Crypter {
 	}
 }
 
-func (c *crypter) Generate(key, salt []byte) (string, error) {
+func (c *crypter) Generate(key, salt []byte) (result string, err error) {
 	if len(salt) == 0 {
 		salt = c.Salt.Generate(SaltLenMax)
 	}
-	if !bytes.HasPrefix(salt, c.Salt.MagicPrefix) {
-		return "", common.ErrSaltPrefix
-	}
-
-	saltToks := bytes.Split(salt, []byte{'$'})
-
-	if len(saltToks) < 3 {
-		return "", common.ErrSaltFormat
-	} else {
-		salt = saltToks[2]
-	}
-	if len(salt) > 8 {
-		salt = salt[0:8]
+	salt, _, _, _, err = c.Salt.Decode(salt)
+	if err != nil {
+		return
 	}
 
 	// Compute alternate MD5 sum with input KEY, SALT, and KEY.

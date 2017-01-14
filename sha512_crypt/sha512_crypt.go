@@ -10,7 +10,6 @@
 package sha512_crypt
 
 import (
-	"bytes"
 	"crypto/sha512"
 	"strconv"
 
@@ -50,42 +49,15 @@ func New() crypt.Crypter {
 }
 
 func (c *crypter) Generate(key, salt []byte) (string, error) {
-	var rounds int
-	var isRoundsDef bool
-
 	if len(salt) == 0 {
 		salt = c.Salt.GenerateWRounds(SaltLenMax, RoundsDefault)
 	}
-	if !bytes.HasPrefix(salt, c.Salt.MagicPrefix) {
-		return "", common.ErrSaltPrefix
+	salt, rounds, isRoundsDef, _, err := c.Salt.Decode(salt)
+	if err != nil {
+		return "", err
 	}
 
-	saltToks := bytes.Split(salt, []byte{'$'})
-	if len(saltToks) < 3 {
-		return "", common.ErrSaltFormat
-	}
 
-	if bytes.HasPrefix(saltToks[2], _rounds) {
-		isRoundsDef = true
-		pr, err := strconv.ParseInt(string(saltToks[2][7:]), 10, 32)
-		if err != nil {
-			return "", common.ErrSaltRounds
-		}
-		rounds = int(pr)
-		if rounds < RoundsMin {
-			rounds = RoundsMin
-		} else if rounds > RoundsMax {
-			rounds = RoundsMax
-		}
-		salt = saltToks[3]
-	} else {
-		rounds = RoundsDefault
-		salt = saltToks[2]
-	}
-
-	if len(salt) > 16 {
-		salt = salt[0:16]
-	}
 
 	// Compute alternate SHA512 sum with input KEY, SALT, and KEY.
 	Alternate := sha512.New()
@@ -240,17 +212,11 @@ func (c *crypter) Verify(hashedKey string, key []byte) error {
 }
 
 func (c *crypter) Cost(hashedKey string) (int, error) {
-	saltToks := bytes.Split([]byte(hashedKey), []byte{'$'})
-	if len(saltToks) < 3 {
-		return 0, common.ErrSaltFormat
+	_, rounds, _, _, err := c.Salt.Decode([]byte(hashedKey))
+	if err != nil {
+		return 0, err
 	}
-
-	if !bytes.HasPrefix(saltToks[2], _rounds) {
-		return RoundsDefault, nil
-	}
-	roundToks := bytes.Split(saltToks[2], []byte{'='})
-	cost, err := strconv.ParseInt(string(roundToks[1]), 10, 0)
-	return int(cost), err
+	return rounds, nil
 }
 
 func (c *crypter) SetSalt(salt common.Salt) { c.Salt = salt }

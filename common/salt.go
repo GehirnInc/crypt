@@ -5,6 +5,7 @@
 package common
 
 import (
+	"bytes"
 	"crypto/rand"
 	"errors"
 	"strconv"
@@ -14,6 +15,10 @@ var (
 	ErrSaltPrefix = errors.New("invalid magic prefix")
 	ErrSaltFormat = errors.New("invalid salt format")
 	ErrSaltRounds = errors.New("invalid rounds")
+)
+
+const (
+	roundsPrefix = "rounds="
 )
 
 // Salt represents a salt.
@@ -91,7 +96,7 @@ func (s *Salt) GenerateWRounds(length, rounds int) []byte {
 
 	roundsText := ""
 	if rounds != s.RoundsDefault {
-		roundsText = "rounds=" + strconv.Itoa(rounds)
+		roundsText = roundsPrefix + strconv.Itoa(rounds)
 	}
 
 	out := make([]byte, len(s.MagicPrefix)+len(roundsText)+length)
@@ -99,4 +104,45 @@ func (s *Salt) GenerateWRounds(length, rounds int) []byte {
 	copy(out[len(s.MagicPrefix):], []byte(roundsText))
 	copy(out[len(s.MagicPrefix)+len(roundsText):], Base64_24Bit(salt))
 	return out
+}
+
+func (s *Salt) Decode(raw []byte) (salt []byte, rounds int, isRoundsDef bool, rest []byte, err error) {
+	tokens := bytes.SplitN(raw, []byte{'$'}, 4)
+	if len(tokens) < 3 {
+		err = ErrSaltFormat
+		return
+	}
+	if !bytes.HasPrefix(raw, s.MagicPrefix) {
+		err = ErrSaltPrefix
+		return
+	}
+
+	if bytes.HasPrefix(tokens[2], []byte(roundsPrefix)) {
+		if len(tokens) < 4 {
+			err = ErrSaltFormat
+			return
+		}
+		salt = tokens[3]
+
+		rounds, err = strconv.Atoi(string(tokens[2][len(roundsPrefix):]))
+		if err != nil {
+			err = ErrSaltRounds
+			return
+		}
+		if rounds < s.RoundsMin {
+			rounds = s.RoundsMin
+		}
+		if rounds > s.RoundsMax {
+			rounds = s.RoundsMax
+		}
+		isRoundsDef = true
+	} else {
+		salt = tokens[2]
+		rounds = s.RoundsDefault
+	}
+	if len(salt) > s.SaltLenMax {
+		salt = salt[0:s.SaltLenMax]
+	}
+
+	return
 }
