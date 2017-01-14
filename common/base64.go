@@ -4,7 +4,9 @@
 
 package common
 
-const alphabet = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+const (
+	alphabet = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+)
 
 // Base64_24Bit is a variant of Base64 encoding, commonly used with password
 // hashing algorithms to encode the result of their checksum output.
@@ -18,40 +20,40 @@ const alphabet = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 //   4. Top 6 bits of the third byte.
 //
 // This encoding method does not emit padding bytes as Base64 does.
-func Base64_24Bit(src []byte) (hash []byte) {
+func Base64_24Bit(src []byte) []byte {
 	if len(src) == 0 {
 		return []byte{} // TODO: return nil
 	}
 
-	hashSize := (len(src) * 8) / 6
-	if (len(src) % 6) != 0 {
-		hashSize += 1
-	}
-	hash = make([]byte, hashSize)
+	dstlen := (len(src)*8 + 5) / 6
+	dst := make([]byte, dstlen)
 
-	dst := hash
-	for len(src) > 0 {
-		switch len(src) {
-		default:
-			dst[0] = alphabet[src[0]&0x3f]
-			dst[1] = alphabet[((src[0]>>6)|(src[1]<<2))&0x3f]
-			dst[2] = alphabet[((src[1]>>4)|(src[2]<<4))&0x3f]
-			dst[3] = alphabet[(src[2]>>2)&0x3f]
-			src = src[3:]
-			dst = dst[4:]
-		case 2:
-			dst[0] = alphabet[src[0]&0x3f]
-			dst[1] = alphabet[((src[0]>>6)|(src[1]<<2))&0x3f]
-			dst[2] = alphabet[(src[1]>>4)&0x3f]
-			src = src[2:]
-			dst = dst[3:]
-		case 1:
-			dst[0] = alphabet[src[0]&0x3f]
-			dst[1] = alphabet[(src[0]>>6)&0x3f]
-			src = src[1:]
-			dst = dst[2:]
-		}
+	di, si := 0, 0
+	n := len(src) / 3 * 3
+	for si < n {
+		val := uint(src[si+2])<<16 | uint(src[si+1])<<8 | uint(src[si])
+		dst[di+0] = alphabet[val&0x3f]
+		dst[di+1] = alphabet[val>>6&0x3f]
+		dst[di+2] = alphabet[val>>12&0x3f]
+		dst[di+3] = alphabet[val>>18]
+		di += 4
+		si += 3
 	}
 
-	return
+	rem := len(src) - si
+	if rem == 0 {
+		return dst
+	}
+
+	val := uint(src[si+0])
+	if rem == 2 {
+		val |= uint(src[si+1]) << 8
+	}
+
+	dst[di+0] = alphabet[val&0x3f]
+	dst[di+1] = alphabet[val>>6&0x3f]
+	if rem == 2 {
+		dst[di+2] = alphabet[val>>12]
+	}
+	return dst
 }
