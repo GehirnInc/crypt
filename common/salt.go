@@ -96,7 +96,7 @@ func (s *Salt) GenerateWRounds(length, rounds int) []byte {
 
 	roundsText := ""
 	if rounds != s.RoundsDefault {
-		roundsText = roundsPrefix + strconv.Itoa(rounds)
+		roundsText = roundsPrefix + strconv.Itoa(rounds) + "$"
 	}
 
 	out := make([]byte, len(s.MagicPrefix)+len(roundsText)+length)
