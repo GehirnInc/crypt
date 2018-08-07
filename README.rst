@@ -45,7 +45,7 @@ Usage
     	ret, _ := crypt.Generate([]byte("secret"), []byte("$5$salt"))
     	fmt.Println(ret)
 
-    	err := crypt.Verify([]byte(ret), []byte("secret"))
+    	err := crypt.Verify(ret, []byte("secret"))
     	fmt.Println(err)
 
     	// Output:
