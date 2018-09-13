@@ -9,6 +9,7 @@ package md5_crypt
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/subtle"
 
 	"github.com/GehirnInc/crypt"
 	"github.com/GehirnInc/crypt/common"
@@ -131,7 +132,7 @@ func (c *crypter) Verify(hashedKey string, key []byte) error {
 	if err != nil {
 		return err
 	}
-	if newHash != hashedKey {
+	if subtle.ConstantTimeCompare([]byte(newHash), []byte(hashedKey)) != 1 {
 		return crypt.ErrKeyMismatch
 	}
 	return nil
