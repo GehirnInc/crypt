@@ -12,6 +12,7 @@ package sha256_crypt
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/subtle"
 	"strconv"
 
 	"github.com/GehirnInc/crypt"
@@ -155,7 +156,7 @@ func (c *crypter) Verify(hashedKey string, key []byte) error {
 	if err != nil {
 		return err
 	}
-	if newHash != hashedKey {
+	if subtle.ConstantTimeCompare([]byte(newHash), []byte(hashedKey)) != 1 {
 		return crypt.ErrKeyMismatch
 	}
 	return nil
