@@ -97,11 +97,8 @@ func New(c Crypt) Crypter {
 // NewFromHash returns a new Crypter using the prefix in the given hashed key.
 func NewFromHash(hashedKey string) Crypter {
 	for i := range cryptPrefixes {
-		if i == 0 {
-			continue
-		}
 		prefix := cryptPrefixes[i]
-		if strings.HasPrefix(hashedKey, prefix) {
+		if crypts[i] != nil && strings.HasPrefix(hashedKey, prefix) {
 			crypt := Crypt(uint(i))
 			return crypt.New()
 		}
